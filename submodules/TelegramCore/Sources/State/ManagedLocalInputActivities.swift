@@ -108,7 +108,7 @@ func managedLocalTypingActivities(activities: Signal<[PeerActivitySpace: [(PeerI
     }
 }
 
-private func actionFromActivity(_ activity: PeerInputActivity?) -> Api.SendMessageAction {
+func actionFromActivity(_ activity: PeerInputActivity?) -> Api.SendMessageAction {
     if let activity = activity {
         switch activity {
             case .typingText:
@@ -175,7 +175,7 @@ private func requestActivity(postbox: Postbox, network: Network, accountPeerId: 
                 }
             }
             
-            if GhostSettings.shouldHideTyping(peerId: peer.id.toInt64()) {
+            if activity == .typingText ? GhostSettings.shouldHideTyping(peerId: peer.id.toInt64()) : (GhostSettings.hideOtherActivities && !GhostSettings.isGhostException(peer.id.toInt64())) {
                 return .complete()
             }
             if let inputPeer = apiInputPeer(peer) {

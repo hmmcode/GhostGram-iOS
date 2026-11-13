@@ -545,6 +545,10 @@ func chatContextMenuItems(context: AccountContext, peerId: EnginePeer.Id, promoI
                             }
                         }
                         
+                        items.append(.action(ContextMenuActionItem(text: "👻 GhostGram…", icon: { theme in generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Eye"), color: theme.contextMenu.primaryColor) }, action: { _, f in
+                            f(.default)
+                            ghostOpenChatActions(context: context, peerId: peerId, controller: chatListController)
+                        })))
                         if GhostSettings.hiddenChatsEnabled {
                             let ghostIsHidden = GhostSettings.hiddenChats.contains(peerId.toInt64())
                             items.append(.action(ContextMenuActionItem(text: ghostIsHidden ? "Показать чат" : "Скрыть чат", icon: { theme in generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/EyeLocked"), color: theme.contextMenu.primaryColor) }, action: { _, f in

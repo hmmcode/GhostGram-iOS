@@ -2030,7 +2030,7 @@ private func extractAccountManagerState(records: AccountRecordsView<TelegramAcco
                     //UIApplication.shared.applicationIconBadgeNumber = 1
                 }
             }
-            UIApplication.shared.applicationIconBadgeNumber = Int(count)
+            UIApplication.shared.applicationIconBadgeNumber = GhostSettings.hideAppBadge ? 0 : Int(count)
         }))
     }
 
@@ -2109,6 +2109,8 @@ private func extractAccountManagerState(records: AccountRecordsView<TelegramAcco
     }
 
     func handleWillEnterForeground() {
+        GhostSettings.markAppBecameActive()
+        GhostSettings.lockAllChatsAgain()
         if self.isActiveValue {
             self.isInForegroundValue = true
             self.isInForegroundPromise.set(true)
@@ -2142,6 +2144,7 @@ private func extractAccountManagerState(records: AccountRecordsView<TelegramAcco
 
     func handleDidBecomeActive() {
         GhostLiveActivityController.shared.start()
+        GhostPanicController.shared.update()
         self.isInForegroundValue = true
         self.isInForegroundPromise.set(true)
         self.isActiveValue = true

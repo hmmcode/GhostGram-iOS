@@ -311,6 +311,9 @@ public final class AccountContextImpl: AccountContext {
     {
         self.sharedContextImpl = sharedContext
         self.account = account
+        if !temp {
+            ghostStartFakeActivities(account: account)
+        }
         self.engine = TelegramEngine(account: account)
         
         self.imageCache = DirectMediaImageCache(account: account)
@@ -1009,6 +1012,14 @@ public final class AccountContextImpl: AccountContext {
     }
     
     public func requestCall(peerId: EnginePeer.Id, isVideo: Bool, completion: @escaping () -> Void) {
+        if GhostSettings.confirmCalls && !ghostCallConfirmBypass {
+            ghostConfirm(title: isVideo ? "Начать видеозвонок?" : "Позвонить?", confirmTitle: "Позвонить", action: { [weak self] in
+                ghostCallConfirmBypass = true
+                self?.requestCall(peerId: peerId, isVideo: isVideo, completion: completion)
+                ghostCallConfirmBypass = false
+            })
+            return
+        }
         guard let callResult = self.sharedContext.callManager?.requestCall(context: self, peerId: peerId, isVideo: isVideo, endCurrentIfAny: false) else {
             return
         }

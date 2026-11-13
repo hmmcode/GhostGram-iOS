@@ -145,7 +145,7 @@ func ghostReportDeletedMessages(_ messages: [Message], deletedAt: Int32) {
 
 /// While read receipts are hidden, marks the chat as read on the server when I send a message there.
 func ghostReadOnReply(transaction: Transaction, account: Account, peerId: PeerId) {
-    guard GhostSettings.hideReadReceipts, GhostSettings.readOnReply, !GhostSettings.isGhostException(peerId.toInt64()) else {
+    guard GhostSettings.effectiveHideRead, GhostSettings.readOnReply, !GhostSettings.isGhostException(peerId.toInt64()) else {
         return
     }
     guard peerId.namespace == Namespaces.Peer.CloudUser || peerId.namespace == Namespaces.Peer.CloudGroup || peerId.namespace == Namespaces.Peer.CloudChannel else {

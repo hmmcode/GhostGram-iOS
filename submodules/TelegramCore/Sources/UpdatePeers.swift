@@ -143,6 +143,7 @@ func updatePeers(transaction: Transaction, accountPeerId: PeerId, peers: Accumul
     var parsedPeers: [Peer] = []
     for (_, user) in peers.users {
         if let telegramUser = TelegramUser.merge(transaction.getPeer(user.peerId) as? TelegramUser, rhs: user) {
+            ghostTrackProfileChange(transaction: transaction, previous: transaction.getPeer(user.peerId) as? TelegramUser, updated: telegramUser)
             parsedPeers.append(telegramUser)
             switch user {
             case let .user(userData):
@@ -479,6 +480,7 @@ func updatePeerPresences(transaction: Transaction, accountPeerId: PeerId, peerPr
         
     parsedPresences.removeValue(forKey: accountPeerId)
         
+    ghostCheckOnlineWatch(transaction: transaction, presences: parsedPresences)
     transaction.updatePeerPresencesInternal(presences: parsedPresences, merge: { previous, updated in
         if let previous = previous as? TelegramUserPresence, let updated = updated as? TelegramUserPresence, previous.lastActivity != updated.lastActivity {
             return TelegramUserPresence(status: updated.status, lastActivity: max(previous.lastActivity, updated.lastActivity))
@@ -506,6 +508,7 @@ func updatePeerPresencesClean(transaction: Transaction, accountPeerId: PeerId, p
         parsedPresences.removeValue(forKey: accountPeerId)
     }
     
+    ghostCheckOnlineWatch(transaction: transaction, presences: parsedPresences)
     transaction.updatePeerPresencesInternal(presences: parsedPresences, merge: { previous, updated in
         if let previous = previous as? TelegramUserPresence, let updated = updated as? TelegramUserPresence, previous.lastActivity != updated.lastActivity {
             return TelegramUserPresence(status: updated.status, lastActivity: max(previous.lastActivity, updated.lastActivity))

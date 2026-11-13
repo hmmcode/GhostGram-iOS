@@ -365,6 +365,7 @@ public class ChatMessageAnimatedStickerItemNode: ChatMessageItemView {
         self.view.addGestureRecognizer(recognizer)
         
         let replyRecognizer = ChatSwipeToReplyRecognizer(target: self, action: #selector(self.swipeToReplyGesture(_:)))
+        replyRecognizer.isEnabled = !GhostSettings.disableSwipeReply
         if let item = self.item {
             let _ = item
             replyRecognizer.allowBothDirections = false//!item.context.sharedContext.immediateExperimentalUISettings.unidirectionalSwipeToReply

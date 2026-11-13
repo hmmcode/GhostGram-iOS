@@ -200,7 +200,8 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
         super.containerLayoutUpdated(layout, transition: transition)
     }
     
-    public func addRootControllers(showCallsTab: Bool, showNewsTab: Bool) {
+    public func addRootControllers(showCallsTab: Bool, showNewsTab originalShowNewsTab: Bool) {
+        let showNewsTab = originalShowNewsTab && !GhostSettings.hideNewsTab
         let tabBarController = TabBarControllerImpl(theme: self.presentationData.theme, strings: self.presentationData.strings)
         tabBarController.navigationPresentation = .master
         let chatListController = self.context.sharedContext.makeChatListController(context: self.context, location: .chatList(groupId: .root), controlsHistoryPreload: true, hideNetworkActivityStatus: false, previewing: false, enableDebugActions: !GlobalExperimentalSettings.isAppStoreBuild)
@@ -252,7 +253,8 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
         self.pushViewController(tabBarController, animated: false)
     }
         
-    public func updateRootControllers(showCallsTab: Bool, showNewsTab: Bool) {
+    public func updateRootControllers(showCallsTab: Bool, showNewsTab originalShowNewsTab: Bool) {
+        let showNewsTab = originalShowNewsTab && !GhostSettings.hideNewsTab
         guard let rootTabController = self.rootTabController as? TabBarControllerImpl else {
             return
         }

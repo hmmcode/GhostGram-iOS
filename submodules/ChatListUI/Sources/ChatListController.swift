@@ -354,7 +354,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
         switch self.location {
         case let .chatList(groupId):
             if groupId == .root {
-                title = self.presentationData.strings.DialogList_Title
+                title = GhostSettings.customChatListTitle ?? self.presentationData.strings.DialogList_Title
             } else {
                 title = self.presentationData.strings.ChatList_ArchivedChatsTitle
             }
@@ -7291,7 +7291,7 @@ private final class ChatListLocationContext {
         switch location {
         case let .chatList(groupId):
             if groupId == .root {
-                defaultTitle = presentationData.strings.DialogList_Title
+                defaultTitle = GhostSettings.customChatListTitle ?? presentationData.strings.DialogList_Title
             } else {
                 defaultTitle = presentationData.strings.ChatList_ArchivedChatsTitle
             }

@@ -1605,6 +1605,7 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
         self.view.isExclusiveTouch = true
 
         let replyRecognizer = ChatSwipeToReplyRecognizer(target: self, action: #selector(self.swipeToReplyGesture(_:)))
+        replyRecognizer.isEnabled = !GhostSettings.disableSwipeReply
         if let item = self.item {
             let _ = item
             replyRecognizer.allowBothDirections = false//!item.context.sharedContext.immediateExperimentalUISettings.unidirectionalSwipeToReply
@@ -6622,7 +6623,9 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
                     case let .optionalAction(f):
                         f()
                     case let .openContextMenu(openContextMenu):
-                        if canAddMessageReactions(message: EngineMessage(openContextMenu.tapMessage)) {
+                        if GhostSettings.doubleTapReply {
+                            item.controllerInteraction.setupReply(openContextMenu.tapMessage.id)
+                        } else if canAddMessageReactions(message: EngineMessage(openContextMenu.tapMessage)) {
                             item.controllerInteraction.updateMessageReaction(openContextMenu.tapMessage, .default, false, nil)
                         } else {
                             item.controllerInteraction.openMessageContextMenu(openContextMenu.tapMessage, openContextMenu.selectAll, self, openContextMenu.subFrame, nil, nil)
@@ -6631,7 +6634,9 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
                 } else if case .tap = gesture {
                     item.controllerInteraction.clickThroughMessage(self.view, location)
                 } else if case .doubleTap = gesture {
-                    if canAddMessageReactions(message: EngineMessage(item.message)) {
+                    if GhostSettings.doubleTapReply {
+                        item.controllerInteraction.setupReply(item.message.id)
+                    } else if canAddMessageReactions(message: EngineMessage(item.message)) {
                         item.controllerInteraction.updateMessageReaction(item.message, .default, false, nil)
                     }
                 }

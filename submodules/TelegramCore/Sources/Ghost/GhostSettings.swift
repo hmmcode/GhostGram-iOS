@@ -97,11 +97,11 @@ public enum GhostSettings {
     }
 
     public static func shouldHideRead(peerId: Int64) -> Bool {
-        return hideReadReceipts && !isGhostException(peerId)
+        return effectiveHideRead && !isGhostException(peerId)
     }
 
     public static func shouldHideTyping(peerId: Int64) -> Bool {
-        return hideTyping && !isGhostException(peerId)
+        return effectiveHideTyping && !isGhostException(peerId)
     }
 
     // MARK: - Media
@@ -226,6 +226,6 @@ public enum GhostSettings {
 
     /// Whether anything in ghost mode is on (for the Dynamic Island).
     public static var isAnyGhostModeOn: Bool {
-        return hideReadReceipts || hideOnlineStatus || hideTyping || hideStoryViews
+        return effectiveHideRead || hideOnlineStatus || isGhostScheduleActive || hideTyping || hideStoryViews
     }
 }

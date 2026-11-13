@@ -17,6 +17,7 @@ import PresentationDataUtils
 import TelegramPresentationData
 import TelegramStringFormatting
 import TextFormat
+import PromptUI
 import UndoUI
 import ShimmerEffect
 import AnimatedAvatarSetNode
@@ -1357,6 +1358,89 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
             }
         }
         
+        if GhostSettings.showNotesAndReminders && message.id.namespace == Namespaces.Message.Cloud {
+            let ghostNote = GhostNotes.note(for: message.id)
+            actions.append(.action(ContextMenuActionItem(text: ghostNote.flatMap { "Заметка: \($0)" } ?? "Добавить заметку", icon: { theme in
+                return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Edit"), color: theme.actionSheet.primaryTextColor)
+            }, action: { c, _ in
+                c?.dismiss(completion: {
+                    let prompt = promptController(context: context, text: "Заметка к сообщению", value: ghostNote ?? "", placeholder: "Видна только вам", characterLimit: 500, apply: { value in
+                        if let value = value {
+                            GhostNotes.setNote(value, for: message.id)
+                        }
+                    })
+                    controllerInteraction.presentController(prompt, nil)
+                })
+            })))
+            actions.append(.action(ContextMenuActionItem(text: "Напомнить", icon: { theme in
+                return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Timer"), color: theme.actionSheet.primaryTextColor)
+            }, action: { c, _ in
+                c?.dismiss(completion: {
+                    let presentationData = context.sharedContext.currentPresentationData.with { $0 }
+                    let chatTitle = message.peers[message.id.peerId]?.debugDisplayTitle ?? "Чат"
+                    let preview = message.text
+                    var tomorrow = DateComponents()
+                    tomorrow.hour = 9
+                    let nextMorning = Calendar.current.nextDate(after: Date(), matching: tomorrow, matchingPolicy: .nextTime) ?? Date().addingTimeInterval(12 * 60 * 60)
+                    let options: [(String, TimeInterval)] = [
+                        ("Через 15 минут", 15 * 60),
+                        ("Через час", 60 * 60),
+                        ("Через 3 часа", 3 * 60 * 60),
+                        ("Утром в 9:00", nextMorning.timeIntervalSinceNow)
+                    ]
+                    var alertActions: [TextAlertAction] = []
+                    for (title, seconds) in options {
+                        alertActions.append(TextAlertAction(type: .genericAction, title: title, action: {
+                            ghostScheduleReminder(chatTitle: chatTitle, text: preview, after: seconds)
+                        }))
+                    }
+                    alertActions.append(TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_Cancel, action: {}))
+                    controllerInteraction.presentController(textAlertController(context: context, title: "Напомнить о сообщении", text: "Придёт уведомление GhostGram.", actions: alertActions, actionLayout: .vertical), nil)
+                })
+            })))
+        }
+
+        if GhostSettings.showMessageDetails {
+            if !message.text.isEmpty {
+                actions.append(.action(ContextMenuActionItem(text: "Копировать как Markdown", icon: { theme in
+                    return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Copy"), color: theme.actionSheet.primaryTextColor)
+                }, action: { _, f in
+                    var ghostEntities: [MessageTextEntity] = []
+                    for attribute in message.attributes {
+                        if let attribute = attribute as? TextEntitiesMessageAttribute {
+                            ghostEntities = attribute.entities
+                        }
+                    }
+                    UIPasteboard.general.string = ghostMarkdown(text: message.text, entities: ghostEntities)
+                    f(.default)
+                })))
+            }
+            if message.id.namespace == Namespaces.Message.Cloud {
+                actions.append(.action(ContextMenuActionItem(text: "К первому сообщению", icon: { theme in
+                    return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/GoToMessage"), color: theme.actionSheet.primaryTextColor)
+                }, action: { _, f in
+                    f(.default)
+                    controllerInteraction.navigateToMessage(message.id, MessageId(peerId: message.id.peerId, namespace: Namespaces.Message.Cloud, id: 1), NavigateToMessageParams())
+                })))
+            }
+        }
+
+        if GhostSettings.filterEnabled, message.flags.contains(.Incoming), let ghostAuthor = message.author as? TelegramUser, ghostAuthor.id != context.account.peerId {
+            let ghostIgnored = GhostSettings.ignoredUsers.contains(ghostAuthor.id.toInt64())
+            actions.append(.action(ContextMenuActionItem(text: ghostIgnored ? "Не игнорировать автора" : "Игнорировать автора", icon: { theme in
+                return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Muted"), color: theme.actionSheet.primaryTextColor)
+            }, action: { _, f in
+                var ignored = GhostSettings.ignoredUsers
+                if ghostIgnored {
+                    ignored.remove(ghostAuthor.id.toInt64())
+                } else {
+                    ignored.insert(ghostAuthor.id.toInt64())
+                }
+                GhostSettings.ignoredUsers = ignored
+                f(.default)
+            })))
+        }
+
         if GhostSettings.showMessageDetails {
             actions.append(.action(ContextMenuActionItem(text: "Подробности", icon: { theme in
                 return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Info"), color: theme.actionSheet.primaryTextColor)
@@ -1412,6 +1496,9 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
                     for entry in ghostEditHistory.reversed() {
                         let time = stringForMessageTimestamp(timestamp: entry.date, dateTimeFormat: presentationData.dateTimeFormat)
                         lines.append("[\(time)]\n\(entry.text)")
+                    }
+                    if let lastVersion = ghostEditHistory.last {
+                        lines.insert("Что изменилось:\n\(ghostDiff(old: lastVersion.text, new: message.text))", at: 0)
                     }
                     controllerInteraction.presentController(textAlertController(
                         context: context,

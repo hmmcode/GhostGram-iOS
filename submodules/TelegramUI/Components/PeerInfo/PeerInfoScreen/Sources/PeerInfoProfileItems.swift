@@ -193,6 +193,18 @@ func infoItems(
                 interaction.requestLayout(animated)
             }))
         }
+        if GhostSettings.showUserIdInProfile {
+            let ghostUserId = user.id.id._internalGetInt64Value()
+            var ghostInfo = "ID \(ghostUserId) · рег. \(ghostEstimatedRegistration(userId: ghostUserId))"
+            if let dc = ghostUserDatacenter(user) {
+                ghostInfo += " · DC\(dc)"
+            }
+            items[currentPeerInfoSection]!.append(PeerInfoScreenLabeledValueItem(id: 39999, label: "GhostGram · нажмите, чтобы скопировать ID", text: ghostInfo, action: { _, _ in
+                UIPasteboard.general.string = "\(ghostUserId)"
+            }, requestLayout: { animated in
+                interaction.requestLayout(animated)
+            }))
+        }
         if let mainUsername = user.addressName {
             var additionalUsernames: String?
             let usernames = user.usernames.filter { $0.isActive && $0.username != mainUsername }

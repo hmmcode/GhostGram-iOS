@@ -144,6 +144,9 @@ public final class HapticFeedback {
     
     @available(iOSApplicationExtension 10.0, iOS 10.0, *)
     private func withImpl(_ f: (HapticFeedbackImpl) -> Void) {
+        if UserDefaults.standard.bool(forKey: "ghost.noHaptics") {
+            return
+        }
         if self.impl == nil {
             self.impl = HapticFeedbackImpl()
         }

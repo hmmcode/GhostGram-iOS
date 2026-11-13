@@ -8,6 +8,9 @@ public extension EnginePeer {
     var compactDisplayTitle: String {
         switch self {
         case let .user(user):
+            if let nickname = GhostSettings.nickname(for: user.id.toInt64()) {
+                return nickname
+            }
             if let firstName = user.firstName, !firstName.isEmpty {
                 return firstName
             } else if let lastName = user.lastName, !lastName.isEmpty {
@@ -31,6 +34,9 @@ public extension EnginePeer {
     func displayTitle(strings: PresentationStrings, displayOrder: PresentationPersonNameOrder) -> String {
         switch self {
         case let .user(user):
+            if let nickname = GhostSettings.nickname(for: user.id.toInt64()) {
+                return nickname
+            }
             if user.id.isReplies {
                 return strings.DialogList_Replies
             }

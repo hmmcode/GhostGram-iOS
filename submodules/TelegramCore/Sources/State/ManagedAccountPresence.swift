@@ -53,7 +53,7 @@ private final class AccountPresenceManagerImpl {
             }, queue: self.queue)
             self.onlineTimer = timer
             timer.start()
-            request = self.network.request(Api.functions.account.updateStatus(offline: GhostSettings.hideOnlineStatus ? .boolTrue : .boolFalse))
+            request = self.network.request(Api.functions.account.updateStatus(offline: GhostSettings.effectiveHideOnline ? .boolTrue : .boolFalse))
         } else {
             self.onlineTimer?.invalidate()
             self.onlineTimer = nil

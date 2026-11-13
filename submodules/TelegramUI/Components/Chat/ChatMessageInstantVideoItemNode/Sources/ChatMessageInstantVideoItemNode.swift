@@ -211,6 +211,7 @@ public class ChatMessageInstantVideoItemNode: ChatMessageItemView, ASGestureReco
         self.view.addGestureRecognizer(recognizer)
         
         let replyRecognizer = ChatSwipeToReplyRecognizer(target: self, action: #selector(self.swipeToReplyGesture(_:)))
+        replyRecognizer.isEnabled = !GhostSettings.disableSwipeReply
         replyRecognizer.shouldBegin = { [weak self] in
             if let strongSelf = self, let item = strongSelf.item {
                 if strongSelf.selectionNode != nil {

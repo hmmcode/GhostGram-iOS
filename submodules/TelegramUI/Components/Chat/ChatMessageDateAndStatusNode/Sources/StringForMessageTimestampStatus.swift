@@ -163,7 +163,7 @@ public func stringForMessageTimestampStatus(
         timestamp = orignalDate
     }
     
-    var dateText = stringForMessageTimestamp(timestamp: timestamp, dateTimeFormat: dateTimeFormat)
+    var dateText = stringForMessageTimestamp(timestamp: timestamp, dateTimeFormat: dateTimeFormat, withSeconds: GhostSettings.showSecondsInTime)
     if timestamp == scheduleWhenOnlineTimestamp {
         dateText = "         "
     }
@@ -259,7 +259,14 @@ public func stringForMessageTimestampStatus(
     }
 
     if message.attributes.contains(where: { $0 is GhostDeletedMessageAttribute }) {
-        dateText = "\u{1F5D1} \(dateText)"
+        if GhostSettings.deletedMarkStyle == 1 {
+            dateText = "удалено \(dateText)"
+        } else {
+            dateText = "\u{1F5D1} \(dateText)"
+        }
+    }
+    if GhostSettings.showNotesAndReminders, GhostNotes.note(for: message.id) != nil {
+        dateText = "\u{1F4DD} \(dateText)"
     }
     
     return dateText

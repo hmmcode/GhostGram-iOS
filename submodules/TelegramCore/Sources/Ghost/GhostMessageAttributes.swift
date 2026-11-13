@@ -191,7 +191,15 @@ func ghostKeepAutoremovedMessage(transaction: Transaction, id: MessageId, isRemo
     } else if !GhostSettings.keepViewOnceMedia {
         return false
     }
-    guard let message = transaction.getMessage(id), ghostCanKeep(message) else {
+    guard let message = transaction.getMessage(id) else {
+        return false
+    }
+    let isSecret = message.id.peerId.namespace == Namespaces.Peer.SecretChat
+    if isSecret {
+        if !GhostSettings.keepSecretSelfDestruct {
+            return false
+        }
+    } else if !ghostCanKeep(message) {
         return false
     }
     let now = ghostCurrentTimestamp()

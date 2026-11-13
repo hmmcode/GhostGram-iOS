@@ -181,6 +181,9 @@ func chatHistoryEntriesForView(
         if pendingRemovedMessages.contains(message.id) {
             continue
         }
+        if ghostShouldHideMessage(message) {
+            continue
+        }
         
         if case let .replyThread(replyThreadMessage) = location, replyThreadMessage.isForumPost {
             if isUndisplayedForumTopicRoot(message, location: location, additionalData: view.additionalData) {

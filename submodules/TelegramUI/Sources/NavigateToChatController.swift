@@ -22,6 +22,15 @@ import ChatMessageNotificationItem
 import FaceScanScreen
 
 public func navigateToChatControllerImpl(_ params: NavigateToChatControllerParams) {
+    if case let .peer(peer) = params.chatLocation, GhostSettings.lockedChats.contains(peer.id.toInt64()), !GhostSettings.isChatUnlockedForSession(peer.id.toInt64()) {
+        ghostAuthenticate(reason: "Открыть закрытый чат", completion: { success in
+            if success {
+                GhostSettings.unlockChatForSession(peer.id.toInt64())
+                navigateToChatControllerImpl(params)
+            }
+        })
+        return
+    }
     if case let .peer(peer) = params.chatLocation {
         let _ = params.context.engine.peers.ensurePeerIsLocallyAvailable(peer: peer).startStandalone()
     }

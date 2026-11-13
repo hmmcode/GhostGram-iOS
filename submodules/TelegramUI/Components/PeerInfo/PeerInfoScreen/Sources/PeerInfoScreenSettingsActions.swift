@@ -18,6 +18,7 @@ import PasswordSetupUI
 import InstantPageCache
 import WalletContext
 import UndoUI
+import LocalAuthentication
 
 extension PeerInfoScreenNode {
     func openSettings(section: PeerInfoSettingsSection) {
@@ -150,7 +151,24 @@ extension PeerInfoScreenNode {
             let controller = self.context.sharedContext.makeSetupTwoFactorAuthController(context: self.context)
             push(controller)
         case .ghostGram:
-            push(ghostGramSettingsController(context: self.context))
+            if GhostSettings.protectMenu {
+                let authContext = LAContext()
+                var authError: NSError?
+                if authContext.canEvaluatePolicy(.deviceOwnerAuthentication, error: &authError) {
+                    let context = self.context
+                    authContext.evaluatePolicy(.deviceOwnerAuthentication, localizedReason: "Открыть GhostGram", reply: { [weak self] success, _ in
+                        DispatchQueue.main.async {
+                            if success {
+                                self?.controller?.push(ghostGramSettingsController(context: context))
+                            }
+                        }
+                    })
+                } else {
+                    push(ghostGramSettingsController(context: self.context))
+                }
+            } else {
+                push(ghostGramSettingsController(context: self.context))
+            }
         case .dataAndStorage:
             push(dataAndStorageController(context: self.context))
         case .appearance:
