@@ -1420,7 +1420,7 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
                     return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/GoToMessage"), color: theme.actionSheet.primaryTextColor)
                 }, action: { _, f in
                     f(.default)
-                    controllerInteraction.navigateToMessage(message.id, MessageId(peerId: message.id.peerId, namespace: Namespaces.Message.Cloud, id: 1), NavigateToMessageParams())
+                    controllerInteraction.navigateToMessage(message.id, EngineMessage.Id(peerId: message.id.peerId, namespace: Namespaces.Message.Cloud, id: 1), NavigateToMessageParams())
                 })))
             }
         }
