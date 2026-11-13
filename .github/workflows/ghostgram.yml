@@ -86,20 +86,25 @@ jobs:
           zip -qry /Users/Shared/out/GhostGram.ipa Payload
           ls -lh /Users/Shared/out
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: GhostGram-${{ env.APP_VERSION }}-${{ env.BUILD_NUMBER }}
-          path: /Users/Shared/out/GhostGram.ipa
-          retention-days: 30
+      - name: Encrypt IPA (it contains the api_id / api_hash)
+        env:
+          IPA_PASSWORD: ${{ secrets.IPA_PASSWORD }}
+        run: |
+          if [ "$GHOST_COMPILE_CHECK" = "1" ]; then
+            echo "Compile check only: nothing to publish."
+            exit 0
+          fi
+          if [ -z "$IPA_PASSWORD" ]; then
+            echo "::error::IPA_PASSWORD secret is not set; refusing to publish an IPA with your API keys in the clear."
+            exit 1
+          fi
+          openssl enc -aes-256-cbc -pbkdf2 -iter 200000 -salt             -in /Users/Shared/out/GhostGram.ipa -out /Users/Shared/out/GhostGram.ipa.enc             -pass env:IPA_PASSWORD
+          rm /Users/Shared/out/GhostGram.ipa
+          ls -lh /Users/Shared/out
 
-      - name: Publish release
+      - name: Publish encrypted release
         if: env.GHOST_COMPILE_CHECK != '1'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release create "ghostgram-${BUILD_NUMBER}" /Users/Shared/out/GhostGram.ipa \
-            --repo "${{ github.repository }}" \
-            --title "GhostGram ${APP_VERSION} (${BUILD_NUMBER})" \
-            --notes "Telegram ${APP_VERSION} + GhostGram. Unsigned: install with Sideloadly." \
-            --latest
+          gh release create "ghostgram-${BUILD_NUMBER}" /Users/Shared/out/GhostGram.ipa.enc             --repo "${{ github.repository }}"             --title "GhostGram ${APP_VERSION} (${BUILD_NUMBER})"             --notes "Encrypted build. Decrypt with: openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 -in GhostGram.ipa.enc -out GhostGram.ipa"             --latest
