@@ -57,6 +57,14 @@ jobs:
           sudo chown $(whoami) /Users/Shared
           cp -R "$GITHUB_WORKSPACE" /Users/Shared/telegram-ios
 
+      - name: Restore bazel cache
+        uses: actions/cache/restore@v4
+        with:
+          path: /Users/Shared/bazel-cache
+          key: bazel-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: |
+            bazel-${{ runner.os }}-
+
       - name: Build
         run: |
           set -x
@@ -67,12 +75,21 @@ jobs:
           python3 build-system/Make/ImportCertificates.py --path build-system/fake-codesigning/certs
           python3 -u build-system/Make/Make.py \
             --bazelUserRoot=/private/var/tmp/_bazel_ghost \
+            --cacheDir=/Users/Shared/bazel-cache \
             build \
             --configurationPath=/tmp/ghost-configuration.json \
             --codesigningInformationPath=build-system/fake-codesigning \
             --configuration=release_arm64 \
             --buildNumber=$BUILD_NUMBER \
             --outputBuildArtifactsPath=/Users/Shared/out
+
+      - name: Save bazel cache
+        if: always()
+        continue-on-error: true
+        uses: actions/cache/save@v4
+        with:
+          path: /Users/Shared/bazel-cache
+          key: bazel-${{ runner.os }}-${{ github.run_id }}
 
       - name: Make a sideload IPA (no extensions, no watch app)
         run: |
