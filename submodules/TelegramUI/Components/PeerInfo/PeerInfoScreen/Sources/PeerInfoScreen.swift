@@ -162,6 +162,7 @@ enum PeerInfoContextSubject {
 }
 
 enum PeerInfoSettingsSection {
+    case ghostGram
     case avatar
     case edit
     case proxy

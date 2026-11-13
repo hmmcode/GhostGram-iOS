@@ -16,6 +16,7 @@ import SaveToCameraRoll
 import PresentationDataUtils
 import TelegramPresentationData
 import TelegramStringFormatting
+import TextFormat
 import UndoUI
 import ShimmerEffect
 import AnimatedAvatarSetNode
@@ -1356,6 +1357,34 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
             }
         }
         
+        let ghostEditHistory = message.ghostEditHistory
+        if !ghostEditHistory.isEmpty {
+            actions.append(.action(ContextMenuActionItem(text: "\u{0418}\u{0441}\u{0442}\u{043E}\u{0440}\u{0438}\u{044F} \u{043F}\u{0440}\u{0430}\u{0432}\u{043E}\u{043A} (\(ghostEditHistory.count))", icon: { theme in
+                return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Edit"), color: theme.actionSheet.primaryTextColor)
+            }, action: { c, _ in
+                c?.dismiss(completion: {
+                    let presentationData = context.sharedContext.currentPresentationData.with { $0 }
+                    var lines: [String] = []
+                    for entry in ghostEditHistory.reversed() {
+                        let time = stringForMessageTimestamp(timestamp: entry.date, dateTimeFormat: presentationData.dateTimeFormat)
+                        lines.append("[\(time)]\n\(entry.text)")
+                    }
+                    controllerInteraction.presentController(textAlertController(
+                        context: context,
+                        title: "\u{0418}\u{0441}\u{0442}\u{043E}\u{0440}\u{0438}\u{044F} \u{043F}\u{0440}\u{0430}\u{0432}\u{043E}\u{043A}",
+                        text: lines.joined(separator: "\n\n"),
+                        actions: [
+                            TextAlertAction(type: .genericAction, title: presentationData.strings.Conversation_ContextMenuCopy, action: {
+                                UIPasteboard.general.string = ghostEditHistory.last?.text
+                            }),
+                            TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {})
+                        ],
+                        actionLayout: .vertical
+                    ), nil)
+                })
+            })))
+        }
+
         let isCopyProtected = chatPresentationInterfaceState.copyProtectionEnabled || message.isCopyProtected()
         if !messageText.isEmpty || richMessageMarkdown != nil || (resourceAvailable && isImage) || diceEmoji != nil {
             if !isExpired {

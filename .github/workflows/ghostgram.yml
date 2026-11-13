@@ -1,0 +1,105 @@
+name: GhostGram IPA
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ master ]
+    paths-ignore:
+      - '**.md'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ghostgram-build
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: xcode-27
+    timeout-minutes: 340
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 1
+
+      - name: Select Xcode
+        run: |
+          XCODE_VERSION=$(python3 -c 'import json;print(json.load(open("versions.json"))["xcode"])')
+          sudo xcode-select -s /Applications/Xcode_$XCODE_VERSION.app/Contents/Developer
+          xcodebuild -version
+          df -h /
+
+      - name: Write configuration
+        env:
+          TG_API_ID: ${{ secrets.TG_API_ID }}
+          TG_API_HASH: ${{ secrets.TG_API_HASH }}
+        run: |
+          if [ -z "$TG_API_ID" ] || [ -z "$TG_API_HASH" ]; then
+            echo "::warning::TG_API_ID / TG_API_HASH secrets are not set: building a compile check that cannot log in."
+            TG_API_ID=0
+            TG_API_HASH=00000000000000000000000000000000
+            echo "GHOST_COMPILE_CHECK=1" >> $GITHUB_ENV
+          fi
+          python3 - <<'PY'
+          import json, os
+          cfg = json.load(open("build-system/appstore-configuration.json"))
+          cfg["api_id"] = os.environ["TG_API_ID"]
+          cfg["api_hash"] = os.environ["TG_API_HASH"]
+          json.dump(cfg, open("/tmp/ghost-configuration.json", "w"), indent=2)
+          PY
+
+      - name: Create canonical source directory
+        run: |
+          sudo mkdir -p /Users/Shared
+          sudo chown $(whoami) /Users/Shared
+          cp -R "$GITHUB_WORKSPACE" /Users/Shared/telegram-ios
+
+      - name: Build
+        run: |
+          set -x
+          cd /Users/Shared/telegram-ios
+          BUILD_NUMBER=$(( $(cat build_number_offset) + 1000 + ${{ github.run_number }} ))
+          echo "BUILD_NUMBER=$BUILD_NUMBER" >> $GITHUB_ENV
+          echo "APP_VERSION=$(python3 -c 'import json;print(json.load(open("versions.json"))["app"])')" >> $GITHUB_ENV
+          python3 build-system/Make/ImportCertificates.py --path build-system/fake-codesigning/certs
+          python3 -u build-system/Make/Make.py \
+            --bazelUserRoot=/private/var/tmp/_bazel_ghost \
+            build \
+            --configurationPath=/tmp/ghost-configuration.json \
+            --codesigningInformationPath=build-system/fake-codesigning \
+            --configuration=release_arm64 \
+            --buildNumber=$BUILD_NUMBER \
+            --outputBuildArtifactsPath=/Users/Shared/out
+
+      - name: Make a sideload IPA (no extensions, no watch app)
+        run: |
+          set -x
+          mkdir -p /tmp/ipa && cd /tmp/ipa
+          unzip -q /Users/Shared/out/Telegram.ipa
+          APP=$(ls -d Payload/*.app)
+          rm -rf "$APP/PlugIns" "$APP/Watch" "$APP/Extensions" "$APP/_CodeSignature"
+          rm -f "$APP/embedded.mobileprovision"
+          ls "$APP" | head -50
+          zip -qry /Users/Shared/out/GhostGram.ipa Payload
+          ls -lh /Users/Shared/out
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: GhostGram-${{ env.APP_VERSION }}-${{ env.BUILD_NUMBER }}
+          path: /Users/Shared/out/GhostGram.ipa
+          retention-days: 30
+
+      - name: Publish release
+        if: env.GHOST_COMPILE_CHECK != '1'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "ghostgram-${BUILD_NUMBER}" /Users/Shared/out/GhostGram.ipa \
+            --repo "${{ github.repository }}" \
+            --title "GhostGram ${APP_VERSION} (${BUILD_NUMBER})" \
+            --notes "Telegram ${APP_VERSION} + GhostGram. Unsigned: install with Sideloadly." \
+            --latest

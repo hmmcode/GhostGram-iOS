@@ -123,6 +123,7 @@ public let telegramPostboxSeedConfiguration: SeedConfiguration = {
             if previous.isEmpty {
                 return
             }
+            ghostMergeMessageAttributes(previous: previous, updated: &updated)
             var audioTranscription: AudioTranscriptionMessageAttribute?
             for attribute in previous {
                 if let attribute = attribute as? AudioTranscriptionMessageAttribute {

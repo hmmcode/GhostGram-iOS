@@ -82,7 +82,9 @@ func managedAutoremoveMessageOperations(network: Network, postbox: Postbox, isRe
                     Logger.shared.log("Autoremove", "Performing autoremove for \(entry.messageId), isRemove: \(isRemove)")
 
                     if let message = transaction.getMessage(entry.messageId) {
-                        if message.id.peerId.namespace == Namespaces.Peer.SecretChat || isRemove {
+                        if ghostKeepAutoremovedMessage(transaction: transaction, id: message.id, isRemove: isRemove) {
+                            Logger.shared.log("Autoremove", "GhostGram kept \(entry.messageId)")
+                        } else if message.id.peerId.namespace == Namespaces.Peer.SecretChat || isRemove {
                             _internal_deleteMessages(transaction: transaction, mediaBox: postbox.mediaBox, ids: [entry.messageId])
                         } else {
                             transaction.updateMessage(message.id, update: { currentMessage in

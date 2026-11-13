@@ -257,6 +257,10 @@ public func stringForMessageTimestampStatus(
             dateText = "\(authorTitle), \(dateText)"
         }
     }
+
+    if message.attributes.contains(where: { $0 is GhostDeletedMessageAttribute }) {
+        dateText = "\u{1F5D1} \(dateText)"
+    }
     
     return dateText
 }

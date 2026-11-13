@@ -149,6 +149,8 @@ extension PeerInfoScreenNode {
             
             let controller = self.context.sharedContext.makeSetupTwoFactorAuthController(context: self.context)
             push(controller)
+        case .ghostGram:
+            push(ghostGramSettingsController(context: self.context))
         case .dataAndStorage:
             push(dataAndStorageController(context: self.context))
         case .appearance:
