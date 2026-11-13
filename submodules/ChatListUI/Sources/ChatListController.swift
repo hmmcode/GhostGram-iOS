@@ -2255,7 +2255,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
             if self.previewing {
                 self.storiesReady.set(.single(true))
             } else {
-                self.storySubscriptionsDisposable = (self.context.engine.messages.storySubscriptions(isHidden: self.location == .chatList(groupId: .archive))
+                self.storySubscriptionsDisposable = (ghostFilterStorySubscriptions(self.context.engine.messages.storySubscriptions(isHidden: self.location == .chatList(groupId: .archive)))
                 |> deliverOnMainQueue).startStrict(next: { [weak self] rawStorySubscriptions in
                     guard let self else {
                         return
@@ -2315,7 +2315,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
                 })
                 
                 if case .chatList(.root) = self.location {
-                    self.storyArchiveSubscriptionsDisposable = (self.context.engine.messages.storySubscriptions(isHidden: true)
+                    self.storyArchiveSubscriptionsDisposable = (ghostFilterStorySubscriptions(self.context.engine.messages.storySubscriptions(isHidden: true))
                     |> deliverOnMainQueue).startStrict(next: { [weak self] rawStoryArchiveSubscriptions in
                         guard let self else {
                             return

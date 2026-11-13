@@ -1357,6 +1357,50 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
             }
         }
         
+        if GhostSettings.showMessageDetails {
+            actions.append(.action(ContextMenuActionItem(text: "Подробности", icon: { theme in
+                return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Info"), color: theme.actionSheet.primaryTextColor)
+            }, action: { c, _ in
+                c?.dismiss(completion: {
+                    let presentationData = context.sharedContext.currentPresentationData.with { $0 }
+                    let formatter = DateFormatter()
+                    formatter.dateFormat = "dd.MM.yyyy HH:mm:ss"
+                    func dateString(_ timestamp: Int32) -> String {
+                        return formatter.string(from: Date(timeIntervalSince1970: Double(timestamp)))
+                    }
+                    var lines: [String] = []
+                    lines.append("ID сообщения: \(message.id.id)")
+                    lines.append("ID чата: \(message.id.peerId.id._internalGetInt64Value())")
+                    if let author = message.author {
+                        lines.append("ID отправителя: \(author.id.id._internalGetInt64Value())")
+                    }
+                    lines.append("Отправлено: \(dateString(message.timestamp))")
+                    if let editedTime = message.editedTime {
+                        lines.append("Изменено: \(dateString(editedTime))")
+                    }
+                    if let forwardInfo = message.forwardInfo {
+                        lines.append("Оригинал от: \(dateString(forwardInfo.date))")
+                    }
+                    if let deleted = message.ghostDeletedAttribute {
+                        lines.append("Удалено: \(dateString(deleted.date))")
+                    }
+                    let text = lines.joined(separator: "\n")
+                    controllerInteraction.presentController(textAlertController(
+                        context: context,
+                        title: "Подробности",
+                        text: text,
+                        actions: [
+                            TextAlertAction(type: .genericAction, title: presentationData.strings.Conversation_ContextMenuCopy, action: {
+                                UIPasteboard.general.string = text
+                            }),
+                            TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {})
+                        ],
+                        actionLayout: .vertical
+                    ), nil)
+                })
+            })))
+        }
+
         let ghostEditHistory = message.ghostEditHistory
         if !ghostEditHistory.isEmpty {
             actions.append(.action(ContextMenuActionItem(text: "\u{0418}\u{0441}\u{0442}\u{043E}\u{0440}\u{0438}\u{044F} \u{043F}\u{0440}\u{0430}\u{0432}\u{043E}\u{043A} (\(ghostEditHistory.count))", icon: { theme in

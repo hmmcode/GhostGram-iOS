@@ -677,6 +677,10 @@ func chatListNodeEntriesForView(view: EngineChatList, state: ChatListNodeState, 
     
     var hasPinned = false
     
+    var ghostHiddenChats = Set<Int64>()
+    if case .chatList = mode, GhostSettings.hiddenChatsEnabled {
+        ghostHiddenChats = GhostSettings.hiddenChats
+    }
     loop: for entry in view.items {
         var peerId: EnginePeer.Id?
         var threadId: Int64?
@@ -694,6 +698,9 @@ func chatListNodeEntriesForView(view: EngineChatList, state: ChatListNodeState, 
             continue loop
         }
         if let peerId = peerId, state.pendingRemovalItemIds.contains(ChatListNodeState.ItemId(peerId: peerId, threadId: threadId)) {
+            continue loop
+        }
+        if threadId == nil, let peerId = peerId, ghostHiddenChats.contains(peerId.toInt64()) {
             continue loop
         }
         var updatedMessages = entry.messages

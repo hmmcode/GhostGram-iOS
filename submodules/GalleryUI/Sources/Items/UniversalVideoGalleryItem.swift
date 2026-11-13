@@ -3566,7 +3566,7 @@ final class UniversalVideoGalleryItemNode: ZoomableContentGalleryItemNode {
             
             if isSettings {
                 let sliderValuePromise = ValuePromise<Double?>(nil)
-                topItems.append(.custom(SliderContextItem(title: strongSelf.presentationData.strings.Gallery_VideoSettings_SpeedControlTitle, minValue: 0.2, maxValue: 2.5, value: status.baseRate, valueChanged: { [weak self] newValue, _ in
+                topItems.append(.custom(SliderContextItem(title: strongSelf.presentationData.strings.Gallery_VideoSettings_SpeedControlTitle, minValue: 0.2, maxValue: GhostSettings.extendedPlaybackSpeeds ? 3.0 : 2.5, value: status.baseRate, valueChanged: { [weak self] newValue, _ in
                     guard let strongSelf = self, let videoNode = strongSelf.videoNode else {
                         return
                     }

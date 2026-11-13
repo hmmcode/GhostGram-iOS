@@ -545,6 +545,20 @@ func chatContextMenuItems(context: AccountContext, peerId: EnginePeer.Id, promoI
                             }
                         }
                         
+                        if GhostSettings.hiddenChatsEnabled {
+                            let ghostIsHidden = GhostSettings.hiddenChats.contains(peerId.toInt64())
+                            items.append(.action(ContextMenuActionItem(text: ghostIsHidden ? "Показать чат" : "Скрыть чат", icon: { theme in generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/EyeLocked"), color: theme.contextMenu.primaryColor) }, action: { _, f in
+                                var hidden = GhostSettings.hiddenChats
+                                if ghostIsHidden {
+                                    hidden.remove(peerId.toInt64())
+                                } else {
+                                    hidden.insert(peerId.toInt64())
+                                }
+                                GhostSettings.hiddenChats = hidden
+                                f(.default)
+                            })))
+                        }
+
                         let appendDeleteOrUngroupItem = {
                             if case .community = peer {
                                 items.append(.action(ContextMenuActionItem(text: strings.ChatList_Context_Ungroup, textColor: .destructive, icon: { theme in generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Ungroup"), color: theme.contextMenu.destructiveColor) }, action: { _, f in

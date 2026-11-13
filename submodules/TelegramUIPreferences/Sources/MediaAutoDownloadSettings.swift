@@ -568,6 +568,9 @@ public func shouldDownloadMediaAutomatically(settings: MediaAutoDownloadSettings
     if isAd {
         return true
     }
+    if !isStory && ghostShouldForceAutodownload(isPrivateChat: peerType == .contact || peerType == .otherPrivate, media: media) {
+        return true
+    }
     if (networkType == .cellular && !settings.cellular.enabled) || (networkType == .wifi && !settings.wifi.enabled) {
         return false
     }

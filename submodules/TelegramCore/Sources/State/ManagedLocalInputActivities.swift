@@ -175,7 +175,7 @@ private func requestActivity(postbox: Postbox, network: Network, accountPeerId: 
                 }
             }
             
-            if GhostSettings.hideTyping {
+            if GhostSettings.shouldHideTyping(peerId: peer.id.toInt64()) {
                 return .complete()
             }
             if let inputPeer = apiInputPeer(peer) {

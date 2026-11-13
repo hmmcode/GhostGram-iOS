@@ -297,7 +297,7 @@ private func pushPeerReadState(network: Network, postbox: Postbox, stateManager:
                     |> mapToSignal { _ -> Signal<Void, NoError> in
                         return .complete()
                     }
-                    if GhostSettings.hideReadReceipts {
+                    if GhostSettings.shouldHideRead(peerId: peerId.toInt64()) {
                         pushSignal = .complete()
                     }
                     if markedUnread {
@@ -339,7 +339,7 @@ private func pushPeerReadState(network: Network, postbox: Postbox, stateManager:
                         return .complete()
                     }
 
-                    if GhostSettings.hideReadReceipts {
+                    if GhostSettings.shouldHideRead(peerId: peerId.toInt64()) {
                         pushSignal = .complete()
                     }
                     if markedUnread {

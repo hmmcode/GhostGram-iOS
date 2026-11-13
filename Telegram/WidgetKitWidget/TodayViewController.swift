@@ -928,7 +928,9 @@ struct Static_AvatarsWidget: Widget {
 @main
 struct AllWidgetsEntryPoint {
     static func main() {
-        if #available(iOS 14.0, *) {
+        if #available(iOS 16.1, *) {
+            AllWidgetsWithGhost.main()
+        } else if #available(iOS 14.0, *) {
             AllWidgets.main()
         } else {
             preconditionFailure()

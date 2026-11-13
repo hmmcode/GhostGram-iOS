@@ -257,6 +257,9 @@ extension ChatControllerImpl {
             updatedAction = .preview
         }
         
+        if GhostSettings.confirmVoice, case .send = action {
+            updatedAction = .preview
+        }
         var sendImmediately = false
         if let _ = self.presentationInterfaceState.sendPaidMessageStars, case .send = action {
             updatedAction = .preview

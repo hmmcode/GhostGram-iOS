@@ -894,6 +894,7 @@ public func resendMessages(account: Account, messageIds: [MessageId]) -> Signal<
 }
 
 func enqueueMessages(transaction: Transaction, account: Account, peerId: PeerId, messages: [(Bool, EnqueueMessage)], disableAutoremove: Bool = false, transformGroupingKeysWithPeerId: Bool = false) -> [MessageId?] {
+    ghostReadOnReply(transaction: transaction, account: account, peerId: peerId)
     /**
      * If it is a support account, mark messages as read here as they are
      * not marked as read when chat is opened.

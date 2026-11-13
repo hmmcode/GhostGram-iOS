@@ -1697,6 +1697,8 @@ plist_fragment(
     <string>en</string>
     <key>CFBundleDisplayName</key>
     <string>GhostGram</string>
+    <key>NSSupportsLiveActivities</key>
+    <true/>
     <key>CFBundleIdentifier</key>
     <string>{telegram_bundle_id}</string>
     <key>CFBundleName</key>

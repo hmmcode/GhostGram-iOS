@@ -80,9 +80,14 @@ jobs:
           mkdir -p /tmp/ipa && cd /tmp/ipa
           unzip -q /Users/Shared/out/Telegram.ipa
           APP=$(ls -d Payload/*.app)
-          rm -rf "$APP/PlugIns" "$APP/Watch" "$APP/Extensions" "$APP/_CodeSignature"
+          ls "$APP/PlugIns" || true
+          rm -rf "$APP/Watch" "$APP/Extensions" "$APP/_CodeSignature"
           rm -f "$APP/embedded.mobileprovision"
-          ls "$APP" | head -50
+          find "$APP/PlugIns" -maxdepth 1 -name "*.appex" ! -iname "*Widget*" -exec rm -rf {} + || true
+          find "$APP/PlugIns" -name "_CodeSignature" -type d -exec rm -rf {} + || true
+          find "$APP/PlugIns" -name "embedded.mobileprovision" -delete || true
+          zip -qry /Users/Shared/out/GhostGram-Island.ipa Payload
+          rm -rf "$APP/PlugIns"
           zip -qry /Users/Shared/out/GhostGram.ipa Payload
           ls -lh /Users/Shared/out
 
@@ -98,8 +103,10 @@ jobs:
             echo "::error::IPA_PASSWORD secret is not set; refusing to publish an IPA with your API keys in the clear."
             exit 1
           fi
-          openssl enc -aes-256-cbc -pbkdf2 -iter 200000 -salt             -in /Users/Shared/out/GhostGram.ipa -out /Users/Shared/out/GhostGram.ipa.enc             -pass env:IPA_PASSWORD
-          rm /Users/Shared/out/GhostGram.ipa
+          for f in GhostGram GhostGram-Island; do
+            openssl enc -aes-256-cbc -pbkdf2 -iter 200000 -salt -in /Users/Shared/out/$f.ipa -out /Users/Shared/out/$f.ipa.enc -pass env:IPA_PASSWORD
+            rm /Users/Shared/out/$f.ipa
+          done
           ls -lh /Users/Shared/out
 
       - name: Publish encrypted release
@@ -107,4 +114,4 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release create "ghostgram-${BUILD_NUMBER}" /Users/Shared/out/GhostGram.ipa.enc             --repo "${{ github.repository }}"             --title "GhostGram ${APP_VERSION} (${BUILD_NUMBER})"             --notes "Encrypted build. Decrypt with: openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 -in GhostGram.ipa.enc -out GhostGram.ipa"             --latest
+          gh release create "ghostgram-${BUILD_NUMBER}" /Users/Shared/out/GhostGram.ipa.enc /Users/Shared/out/GhostGram-Island.ipa.enc             --repo "${{ github.repository }}"             --title "GhostGram ${APP_VERSION} (${BUILD_NUMBER})"             --notes "Encrypted build. Decrypt with: openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 -in GhostGram.ipa.enc -out GhostGram.ipa"             --latest

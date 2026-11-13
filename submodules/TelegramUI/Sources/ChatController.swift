@@ -243,6 +243,9 @@ struct ScrolledToMessageId: Equatable {
     var allowedReplacementDirection: AllowedReplacementDirections
 }
 
+/// GhostGram: set while re-sending a sticker the user confirmed.
+private var ghostStickerConfirmBypass = false
+
 public final class ChatControllerImpl: TelegramBaseController, ChatController, GalleryHiddenMediaTarget, UIDropInteractionDelegate {    
     var validLayout: ContainerViewLayout?
     
@@ -2471,6 +2474,18 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
             }
         }, sendSticker: { [weak self] fileReference, silentPosting, schedule, query, clearInput, sourceView, sourceRect, sourceLayer, bubbleUpEmojiOrStickersets in
             guard let strongSelf = self else {
+                return false
+            }
+
+            if GhostSettings.confirmStickers && !ghostStickerConfirmBypass {
+                strongSelf.present(textAlertController(context: strongSelf.context, updatedPresentationData: strongSelf.updatedPresentationData, title: nil, text: "Отправить стикер?", actions: [
+                    TextAlertAction(type: .genericAction, title: strongSelf.presentationData.strings.Common_Cancel, action: {}),
+                    TextAlertAction(type: .defaultAction, title: "Отправить", action: { [weak strongSelf] in
+                        ghostStickerConfirmBypass = true
+                        let _ = strongSelf?.controllerInteraction?.sendSticker(fileReference, silentPosting, schedule, query, clearInput, nil, nil, nil, bubbleUpEmojiOrStickersets)
+                        ghostStickerConfirmBypass = false
+                    })
+                ]), in: .window(.root))
                 return false
             }
             

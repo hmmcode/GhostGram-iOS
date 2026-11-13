@@ -102,7 +102,11 @@ func ghostKeepDeletedMessages(transaction: Transaction, ids: [MessageId]) -> [Me
         return ids
     }
     var remaining: [MessageId] = []
+    var kept: [Message] = []
     let now = ghostCurrentTimestamp()
+    defer {
+        ghostReportDeletedMessages(kept, deletedAt: now)
+    }
     for id in ids {
         guard let message = transaction.getMessage(id), ghostCanKeep(message) else {
             remaining.append(id)
@@ -111,6 +115,7 @@ func ghostKeepDeletedMessages(transaction: Transaction, ids: [MessageId]) -> [Me
         if message.ghostDeletedAttribute != nil {
             continue
         }
+        kept.append(message)
         transaction.updateMessage(id, update: { current in
             var attributes = current.attributes
             attributes.append(GhostDeletedMessageAttribute(date: now))
