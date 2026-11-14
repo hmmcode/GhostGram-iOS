@@ -6,6 +6,8 @@ on:
     branches: [ master ]
     paths-ignore:
       - '**.md'
+      - 'plugins/**'
+      - '.github/workflows/plugin-check.yml'
 
 permissions:
   contents: write

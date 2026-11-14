@@ -314,6 +314,8 @@ public final class AccountContextImpl: AccountContext {
         if !temp {
             ghostStartFakeActivities(account: account)
             ghostSyncNameMarker(account: account)
+            GhostPluginUI.install()
+            ghostPluginsAttach(account: account)
         }
         self.engine = TelegramEngine(account: account)
         

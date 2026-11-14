@@ -1,0 +1,80 @@
+name: Plugin engine type check
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ plugincheck ]
+
+jobs:
+  typecheck:
+    runs-on: xcode-27
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Select Xcode
+        run: |
+          XCODE_VERSION=$(python3 -c 'import json;print(json.load(open("versions.json"))["xcode"])')
+          sudo xcode-select -s /Applications/Xcode_$XCODE_VERSION.app/Contents/Developer
+
+      - name: Type-check the standalone plugin files against the iOS SDK
+        run: |
+          set -e
+          mkdir -p /tmp/tc
+          cp submodules/TelegramCore/Sources/Ghost/GhostPluginRuntime.swift submodules/TelegramCore/Sources/Ghost/GhostPluginPrelude.swift /tmp/tc/
+          sed '/^import TelegramCore$/d' submodules/SettingsUI/Sources/GhostPluginsScreen.swift > /tmp/tc/GhostPluginsScreen.swift
+          sed '/^import TelegramCore$/d' submodules/TelegramUI/Sources/GhostPluginUI.swift > /tmp/tc/GhostPluginUI.swift
+          SDK=$(xcrun --sdk iphoneos --show-sdk-path)
+          for mode in 5 6; do
+            echo "== swift-version $mode =="
+            xcrun swiftc -typecheck -sdk "$SDK" -target arm64-apple-ios15.0 -swift-version $mode -warnings-as-errors /tmp/tc/*.swift || { [ $mode = 6 ] && echo "::warning::swift 6 mode reports issues (informational)"; [ $mode = 5 ] && exit 1; }
+          done
+
+      - name: Run the prelude in JavaScriptCore
+        run: |
+          set -e
+          cat > /tmp/tc/jsc_test.swift <<'SWIFT'
+          import Foundation
+          import JavaScriptCore
+          let context = JSContext()!
+          var errors: [String] = []
+          context.exceptionHandler = { _, e in errors.append(e?.toString() ?? "?") }
+          let native = JSValue(newObjectIn: context)!
+          var sent: [String] = []
+          let log: @convention(block) (JSValue, JSValue) -> Void = { l, t in print("log", l.toString()!, t.toString()!) }
+          let send: @convention(block) (JSValue, JSValue, JSValue) -> Void = { c, t, r in sent.append(t.toString()!) }
+          let noop2: @convention(block) (JSValue, JSValue) -> Void = { _, _ in }
+          let noop1: @convention(block) (JSValue) -> Void = { _ in }
+          let noop3: @convention(block) (JSValue, JSValue, JSValue) -> Void = { _, _, _ in }
+          let noop4: @convention(block) (JSValue, JSValue, JSValue, JSValue) -> Void = { _, _, _, _ in }
+          let str: @convention(block) () -> String = { "" }
+          let get: @convention(block) (JSValue) -> JSValue = { _ in JSValue(nullIn: JSContext.current()) }
+          native.setObject(unsafeBitCast(log, to: AnyObject.self), forKeyedSubscript: "log" as NSString)
+          native.setObject(unsafeBitCast(send, to: AnyObject.self), forKeyedSubscript: "send" as NSString)
+          for n in ["setTimer", "storageSet"] { native.setObject(unsafeBitCast(noop2, to: AnyObject.self), forKeyedSubscript: n as NSString) }
+          for n in ["clearTimer", "cancelNotify", "storageRemove"] { native.setObject(unsafeBitCast(noop1, to: AnyObject.self), forKeyedSubscript: n as NSString) }
+          native.setObject(unsafeBitCast(noop3, to: AnyObject.self), forKeyedSubscript: "ui" as NSString)
+          native.setObject(unsafeBitCast(noop4, to: AnyObject.self), forKeyedSubscript: "notify" as NSString)
+          for n in ["storageKeys", "me", "appVersion"] { native.setObject(unsafeBitCast(str, to: AnyObject.self), forKeyedSubscript: n as NSString) }
+          native.setObject(unsafeBitCast(get, to: AnyObject.self), forKeyedSubscript: "storageGet" as NSString)
+          context.setObject(native, forKeyedSubscript: "__native" as NSString)
+          context.evaluateScript(ghostPluginPrelude)
+          for file in CommandLine.arguments.dropFirst() {
+            context.evaluateScript(try! String(contentsOfFile: file, encoding: .utf8), withSourceURL: URL(fileURLWithPath: file))
+          }
+          let out = context.objectForKeyedSubscript("__ggOutgoing").call(withArguments: ["{\"chatId\":\"1\",\"chatType\":\"private\",\"chatTitle\":\"t\",\"text\":\".calc 2+2*3\",\"replyTo\":0}"])!.toString()!
+          print("calc ->", out)
+          let a = context.objectForKeyedSubscript("__ggOutgoing").call(withArguments: ["{\"chatId\":\"1\",\"text\":\".async\",\"replyTo\":0}"])!.toString()!
+          print("async ->", a, "sent:", sent)
+          print("info ->", context.objectForKeyedSubscript("__ggInfo").call(withArguments: [])!.toString()!)
+          print("errors:", errors)
+          if !errors.isEmpty || !out.contains("2+2*3 = 8") || !sent.contains("done") { exit(1) }
+          print("JSC OK")
+          SWIFT
+          sed -i '' 's/^          //' /tmp/tc/jsc_test.swift
+          printf '%s\n' "GG.command('.async', async function(){ return 'done'; });" > /tmp/tc/async.js
+          SDK=$(xcrun --sdk macosx --show-sdk-path)
+          xcrun swiftc -sdk "$SDK" -o /tmp/tc/jsc_test /tmp/tc/jsc_test.swift submodules/TelegramCore/Sources/Ghost/GhostPluginPrelude.swift
+          /tmp/tc/jsc_test plugins/*.js /tmp/tc/async.js

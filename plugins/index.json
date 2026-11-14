@@ -1,0 +1,93 @@
+{
+  "version": 1,
+  "plugins": [
+    {
+      "id": "calc",
+      "name": "Калькулятор",
+      "version": "1.0",
+      "author": "GhostGram",
+      "description": ".calc 2+2*3 — посчитает и отправит «2+2*3 = 8». Есть sqrt, sin, cos, abs, round, pi, ^ и %.",
+      "file": "calc.js"
+    },
+    {
+      "id": "weather",
+      "name": "Погода",
+      "version": "1.0",
+      "author": "GhostGram",
+      "description": ".weather Москва — отправит погоду сейчас. Без города берёт город из настроек.",
+      "file": "weather.js"
+    },
+    {
+      "id": "translate",
+      "name": "Переводчик",
+      "version": "1.0",
+      "author": "GhostGram",
+      "description": ".tr en привет — отправит перевод. .tr текст — переведёт на язык из настроек. Коды: en, ru, uk, de, es, fr, tr, zh, ja…",
+      "file": "translate.js"
+    },
+    {
+      "id": "currency",
+      "name": "Курсы валют",
+      "version": "1.0",
+      "author": "GhostGram",
+      "description": ".rate 100 usd rub — пересчитает и отправит. .rate usd — курс к рублю. Курсы обновляются раз в сутки.",
+      "file": "currency.js"
+    },
+    {
+      "id": "timer",
+      "name": "Напоминалки",
+      "version": "1.0",
+      "author": "GhostGram",
+      "description": ".timer 10m купить хлеб — пришлёт уведомление через 10 минут, даже если GhostGram закрыт. Единицы: s, m, h, d (или с, м, ч, д).",
+      "file": "timer.js"
+    },
+    {
+      "id": "autoreply",
+      "name": "Автоответчик",
+      "version": "1.0",
+      "author": "GhostGram",
+      "description": "Отвечает в личке, пока ты занят. .afk [текст] — включить, .back — выключить. Работает, пока GhostGram открыт или недавно свёрнут.",
+      "file": "autoreply.js"
+    },
+    {
+      "id": "keywords",
+      "name": "Слежка за словами",
+      "version": "1.0",
+      "author": "GhostGram",
+      "description": "Пришлёт уведомление, если в любом чате (даже без звука) написали твоё слово: ник, имя, «срочно» и т.д.",
+      "file": "keywords.js"
+    },
+    {
+      "id": "shortcuts",
+      "name": "Сокращения",
+      "version": "1.0",
+      "author": "GhostGram",
+      "description": "Сам разворачивает сокращения в твоих сообщениях: «спс» → «спасибо». Список меняется в настройках или командой .short спс=спасибо.",
+      "file": "shortcuts.js"
+    },
+    {
+      "id": "fonts",
+      "name": "Шрифты и приколы с текстом",
+      "version": "1.0",
+      "author": "GhostGram",
+      "description": ".wide, .flip, .mock, .rev, .strike, .under, .zalgo, .small — превращают текст перед отправкой.",
+      "file": "fonts.js"
+    },
+    {
+      "id": "fun",
+      "name": "Рандом",
+      "version": "1.0",
+      "author": "GhostGram",
+      "description": ".roll, .coin, .choose a | b | c, .8ball вопрос, .rnd 1 100.",
+      "file": "fun.js"
+    },
+    {
+      "id": "my-plugin",
+      "name": "Мой плагин (шаблон)",
+      "version": "1.0",
+      "author": "я",
+      "description": "Шаблон: покажет, как устроены команды, события, настройки и кнопки. .hello — проверка.",
+      "file": "template.js"
+    }
+  ]
+}

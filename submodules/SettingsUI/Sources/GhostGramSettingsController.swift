@@ -254,6 +254,7 @@ private enum GhostLink: Int32 {
     case chatListTitle
     case amoled
     case openById
+    case plugins
     case hiddenChats
     case lockedChats
     case stats
@@ -352,6 +353,10 @@ private func ghostGramSettingsEntries() -> [GhostGramSettingsEntry] {
     func footer(_ section: Int32, _ text: String) {
         entries.append(.footer(id: next(), section: section, text: text))
     }
+
+    header(30, "🧩 ПЛАГИНЫ")
+    link(30, .plugins, "🧩 Плагины", "\(GhostPlugins.shared.installed.filter { GhostPlugins.shared.isEnabled($0.id) }.count) вкл")
+    footer(30, "Новые функции без пересборки: калькулятор, погода, автоответчик, переводчик и другие. Ставятся из каталога или файлом .js.")
 
     header(0, "👻 РЕЖИМ ПРИЗРАКА")
     toggle(0, .hideRead)
@@ -623,6 +628,9 @@ public func ghostGramSettingsController(context: AccountContext) -> ViewControll
             ghostPushController(controller, ghostPeerListController(context: context, kind: .nicknames))
         case .onlineNow:
             ghostPushController(controller, ghostOnlineNowController(context: context))
+        case .plugins:
+            let dark = context.sharedContext.currentPresentationData.with { $0 }.theme.overallDarkAppearance
+            ghostPresentPluginsScreen(from: controller, dark: dark)
         case .amoled:
             let nightTheme = PresentationThemeReference.builtin(.night)
             let _ = updatePresentationThemeSettingsInteractively(accountManager: context.sharedContext.accountManager, { current in

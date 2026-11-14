@@ -759,6 +759,32 @@ private func opportunisticallyTransformOutgoingMedia(network: Network, postbox: 
 }
 
 public func enqueueMessages(account: Account, peerId: PeerId, messages: [EnqueueMessage]) -> Signal<[MessageId?], NoError> {
+    // GhostGram plugins may rewrite or cancel text messages; results keep one slot per original message.
+    let transformed = ghostPluginsTransformOutgoing(accountPeerId: account.peerId, peerId: peerId, messages: messages)
+    let kept = transformed.compactMap { $0 }
+    if kept.count == transformed.count {
+        return ghostEnqueueMessagesImpl(account: account, peerId: peerId, messages: kept)
+    }
+    if kept.isEmpty {
+        return .single(Array<MessageId?>(repeating: nil, count: messages.count))
+    }
+    return ghostEnqueueMessagesImpl(account: account, peerId: peerId, messages: kept)
+    |> map { ids -> [MessageId?] in
+        var result: [MessageId?] = []
+        var index = 0
+        for item in transformed {
+            if item != nil {
+                result.append(index < ids.count ? ids[index] : nil)
+                index += 1
+            } else {
+                result.append(nil)
+            }
+        }
+        return result
+    }
+}
+
+private func ghostEnqueueMessagesImpl(account: Account, peerId: PeerId, messages: [EnqueueMessage]) -> Signal<[MessageId?], NoError> {
     let signal: Signal<[(Bool, EnqueueMessage)], NoError>
     if let transformOutgoingMessageMedia = account.transformOutgoingMessageMedia {
         signal = opportunisticallyTransformOutgoingMedia(network: account.network, postbox: account.postbox, transformOutgoingMessageMedia: transformOutgoingMessageMedia, messages: messages, userInteractive: true)
