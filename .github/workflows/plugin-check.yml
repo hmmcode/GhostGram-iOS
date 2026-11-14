@@ -33,7 +33,7 @@ jobs:
       - name: Run the prelude in JavaScriptCore
         run: |
           set -e
-          cat > /tmp/tc/jsc_test.swift <<'SWIFT'
+          cat > /tmp/tc/main.swift <<'SWIFT'
           import Foundation
           import JavaScriptCore
           let context = JSContext()!
@@ -71,8 +71,8 @@ jobs:
           if !errors.isEmpty || !out.contains("2+2*3 = 8") || !sent.contains("done") { exit(1) }
           print("JSC OK")
           SWIFT
-          sed -i '' 's/^          //' /tmp/tc/jsc_test.swift
+          sed -i '' 's/^          //' /tmp/tc/main.swift
           printf '%s\n' "GG.command('.async', async function(){ return 'done'; });" > /tmp/tc/async.js
           SDK=$(xcrun --sdk macosx --show-sdk-path)
-          xcrun swiftc -sdk "$SDK" -o /tmp/tc/jsc_test /tmp/tc/jsc_test.swift submodules/TelegramCore/Sources/Ghost/GhostPluginPrelude.swift
+          xcrun swiftc -sdk "$SDK" -o /tmp/tc/jsc_test /tmp/tc/main.swift submodules/TelegramCore/Sources/Ghost/GhostPluginPrelude.swift
           /tmp/tc/jsc_test plugins/*.js /tmp/tc/async.js
