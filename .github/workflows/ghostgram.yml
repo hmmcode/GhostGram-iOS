@@ -20,6 +20,21 @@ jobs:
     timeout-minutes: 340
 
     steps:
+      - name: Check secrets before the long build
+        env:
+          TG_API_ID: ${{ secrets.TG_API_ID }}
+          TG_API_HASH: ${{ secrets.TG_API_HASH }}
+          IPA_PASSWORD: ${{ secrets.IPA_PASSWORD }}
+        run: |
+          missing=""
+          [ -z "$TG_API_ID" ] && missing="$missing TG_API_ID"
+          [ -z "$TG_API_HASH" ] && missing="$missing TG_API_HASH"
+          [ -z "$IPA_PASSWORD" ] && missing="$missing IPA_PASSWORD"
+          if [ -n "$missing" ]; then
+            echo "::error::Missing repository secrets:$missing"
+            exit 1
+          fi
+
       - uses: actions/checkout@v4
         with:
           submodules: recursive
