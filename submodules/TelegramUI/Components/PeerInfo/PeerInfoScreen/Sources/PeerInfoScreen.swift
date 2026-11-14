@@ -316,6 +316,9 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, PeerInfoScreenNodePro
     private var layoutHeldDuringExpansion: (layout: ContainerViewLayout, navigationHeight: CGFloat)?
     /// The page's colour while an expansion fades it in under the card (the node's own colour is clear then).
     var expansionBackgroundView: UIView?
+    private var ghostGlassView: UIView?
+    private var ghostGlassPeerId: EnginePeer.Id?
+    private let ghostGlassDisposable = MetaDisposable()
     /// What waits for the expansion to return the header's views (a tooltip pointing at one of them would show under
     /// the lent avatar, which the expansion draws above the profile).
     private var actionsAfterExpansion: [() -> Void] = []
@@ -2866,6 +2869,7 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, PeerInfoScreenNodePro
             }
         }
         self.data = data
+        self.ghostUpdateGlass()
         if previousData?.members?.membersContext !== data.members?.membersContext {
             if let peer = data.peer, let _ = data.members {
                 self.groupMembersSearchContext = GroupMembersSearchContext(context: self.context, peerId: peer.id)
@@ -5676,6 +5680,7 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, PeerInfoScreenNodePro
             return
         }
         self.validLayout = (layout, navigationHeight)
+        self.ghostUpdateGlass()
         
         self.headerNode.customNavigationContentNode = self.paneContainerNode.currentPane?.node.navigationContentNode
         
@@ -6081,6 +6086,48 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, PeerInfoScreenNodePro
         }
     }
     
+    /// GhostGram "glass" profile: the peer's avatar, blurred, behind the whole screen.
+    private func ghostUpdateGlass() {
+        guard GhostSettings.glassProfile, self.isNodeLoaded, let peer = self.data?.peer else {
+            if let glassView = self.ghostGlassView {
+                glassView.removeFromSuperview()
+                self.ghostGlassView = nil
+                self.ghostGlassPeerId = nil
+                self.ghostGlassDisposable.set(nil)
+            }
+            return
+        }
+        let glassView: UIView
+        if let current = self.ghostGlassView {
+            glassView = current
+        } else {
+            glassView = UIView()
+            glassView.isUserInteractionEnabled = false
+            glassView.clipsToBounds = true
+            let imageView = UIImageView()
+            imageView.contentMode = .scaleAspectFill
+            imageView.tag = 1
+            glassView.addSubview(imageView)
+            let blurView = UIVisualEffectView(effect: UIBlurEffect(style: self.presentationData.theme.overallDarkAppearance ? .systemThinMaterialDark : .systemThinMaterialLight))
+            blurView.tag = 2
+            glassView.addSubview(blurView)
+            self.view.insertSubview(glassView, at: 0)
+            self.ghostGlassView = glassView
+        }
+        glassView.frame = self.view.bounds
+        for subview in glassView.subviews {
+            subview.frame = glassView.bounds
+        }
+        if self.ghostGlassPeerId != peer.id {
+            self.ghostGlassPeerId = peer.id
+            let imageView = glassView.viewWithTag(1) as? UIImageView
+            self.ghostGlassDisposable.set((peerAvatarCompleteImage(account: self.context.account, peer: peer, size: CGSize(width: 320.0, height: 320.0), round: false, drawLetters: false, fullSize: true, blurred: true)
+            |> deliverOnMainQueue).start(next: { [weak imageView] image in
+                imageView?.image = image
+            }))
+        }
+    }
+
     private func updateBackgroundColor() {
         let color: UIColor
         if self.paneContainerNode.currentPaneKey == .gifts {

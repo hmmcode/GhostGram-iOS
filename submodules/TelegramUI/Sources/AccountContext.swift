@@ -313,6 +313,7 @@ public final class AccountContextImpl: AccountContext {
         self.account = account
         if !temp {
             ghostStartFakeActivities(account: account)
+            ghostSyncNameMarker(account: account)
         }
         self.engine = TelegramEngine(account: account)
         

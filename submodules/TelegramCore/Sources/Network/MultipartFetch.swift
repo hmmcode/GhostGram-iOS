@@ -572,10 +572,11 @@ private final class MultipartFetchManager {
             }
         }
         
+        let ghostBoost = GhostSettings.downloadBoost
         if isStory {
-            self.defaultPartSize = 512 * 1024
+            self.defaultPartSize = ghostBoost ? 1024 * 1024 : 512 * 1024
             if let size = size, size > self.defaultPartSize {
-                self.parallelParts = 4
+                self.parallelParts = ghostBoost ? 8 : 4
             } else {
                 self.parallelParts = 1
             }
@@ -584,8 +585,8 @@ private final class MultipartFetchManager {
                 self.defaultPartSize = 16 * 1024
                 self.parallelParts = 4 * 4
             } else {
-                self.defaultPartSize = 512 * 1024
-                self.parallelParts = 8
+                self.defaultPartSize = ghostBoost ? 1024 * 1024 : 512 * 1024
+                self.parallelParts = ghostBoost ? 16 : 8
             }
         } else {
             self.parallelParts = 1

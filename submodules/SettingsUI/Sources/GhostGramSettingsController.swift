@@ -62,6 +62,10 @@ private enum GhostToggle: Int32 {
     case islandBadge
     case minimalTabs
     case hideOnCapture
+    case downloadBoost
+    case glassProfile
+    case advertiseBadge
+    case showBadges
     case hiddenChats
     case panicShake
     case protectMenu
@@ -111,6 +115,10 @@ private enum GhostToggle: Int32 {
         case .islandBadge: return "Плашка GhostGram у островка"
         case .minimalTabs: return "Внизу только «Чаты» и «Профиль»"
         case .hideOnCapture: return "Скрывать экран при записи"
+        case .downloadBoost: return "Ускоритель загрузок"
+        case .glassProfile: return "Стеклянный профиль"
+        case .advertiseBadge: return "👻 у моего имени для юзеров GhostGram"
+        case .showBadges: return "Показывать 👻 у юзеров GhostGram"
         case .hiddenChats: return "Скрытые чаты"
         case .panicShake: return "Встряхнуть — выйти (паника)"
         case .protectMenu: return "Face ID на меню GhostGram"
@@ -162,6 +170,10 @@ private enum GhostToggle: Int32 {
         case .islandBadge: return GhostSettings.islandBadge
         case .minimalTabs: return GhostSettings.minimalTabs
         case .hideOnCapture: return GhostSettings.hideOnScreenRecording
+        case .downloadBoost: return GhostSettings.downloadBoost
+        case .glassProfile: return GhostSettings.glassProfile
+        case .advertiseBadge: return GhostSettings.advertiseGhostGram
+        case .showBadges: return GhostSettings.showGhostBadges
         case .hiddenChats: return GhostSettings.hiddenChatsEnabled
         case .panicShake: return GhostSettings.panicShake
         case .protectMenu: return GhostSettings.protectMenu
@@ -213,6 +225,10 @@ private enum GhostToggle: Int32 {
         case .islandBadge: GhostSettings.islandBadge = value
         case .minimalTabs: GhostSettings.minimalTabs = value
         case .hideOnCapture: GhostSettings.hideOnScreenRecording = value
+        case .downloadBoost: GhostSettings.downloadBoost = value
+        case .glassProfile: GhostSettings.glassProfile = value
+        case .advertiseBadge: GhostSettings.advertiseGhostGram = value
+        case .showBadges: GhostSettings.showGhostBadges = value
         case .hiddenChats: GhostSettings.hiddenChatsEnabled = value
         case .panicShake: GhostSettings.panicShake = value
         case .protectMenu: GhostSettings.protectMenu = value
@@ -374,6 +390,7 @@ private func ghostGramSettingsEntries() -> [GhostGramSettingsEntry] {
     footer(3, "Сообщения с этими словами и от людей из игнор-листа не показываются. Добавить в игнор — меню сообщения → «Игнорировать автора».")
 
     header(4, "📥 МЕДИА")
+    toggle(4, .downloadBoost)
     toggle(4, .autoCache)
     let cacheOn = GhostSettings.autoCachePrivateMedia
     toggle(4, .autoCachePhotos, enabled: cacheOn)
@@ -416,6 +433,9 @@ private func ghostGramSettingsEntries() -> [GhostGramSettingsEntry] {
     toggle(7, .hideBadge)
     toggle(7, .dynamicIsland)
     toggle(7, .islandBadge)
+    toggle(7, .glassProfile)
+    toggle(7, .showBadges)
+    toggle(7, .advertiseBadge)
     toggle(7, .minimalTabs)
     link(7, .amoled, "🖤 Включить AMOLED-тему")
     link(7, .chatListTitle, "Заголовок списка чатов", GhostSettings.customChatListTitle ?? "Чаты")
@@ -494,6 +514,9 @@ public func ghostGramSettingsController(context: AccountContext) -> ViewControll
 
     let arguments = GhostGramSettingsArguments(toggle: { option, value in
         option.set(value)
+        if case .advertiseBadge = option {
+            ghostSyncNameMarker(account: context.account)
+        }
         changed()
     }, open: { link in
         openImpl?(link)

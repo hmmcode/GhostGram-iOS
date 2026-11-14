@@ -286,6 +286,18 @@ public extension GhostSettings {
         set { store.set(newValue, forKey: "ghost.minimalTabs") }
     }
 
+    /// Bigger download parts (1 MB) and more of them in parallel.
+    static var downloadBoost: Bool {
+        get { return flag("ghost.downloadBoost", true) }
+        set { store.set(newValue, forKey: "ghost.downloadBoost") }
+    }
+
+    /// Profile screen over a blurred avatar, with translucent cards.
+    static var glassProfile: Bool {
+        get { return flag("ghost.glassProfile", true) }
+        set { store.set(newValue, forKey: "ghost.glassProfile") }
+    }
+
     /// Cover the app with black while the screen is being recorded or mirrored.
     static var hideOnScreenRecording: Bool {
         get { return flag("ghost.hideOnCapture", false) }

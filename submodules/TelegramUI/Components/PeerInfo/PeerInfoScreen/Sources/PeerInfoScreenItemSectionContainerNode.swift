@@ -4,6 +4,7 @@ import Display
 import AsyncDisplayKit
 import AccountContext
 import TelegramPresentationData
+import TelegramCore
 
 final class PeerInfoScreenItemSectionContainerNode: ASDisplayNode {
     private let backgroundNode: ASDisplayNode
@@ -36,7 +37,11 @@ final class PeerInfoScreenItemSectionContainerNode: ASDisplayNode {
     }
     
     func update(context: AccountContext, width: CGFloat, safeInsets: UIEdgeInsets, hasCorners: Bool, presentationData: PresentationData, items: [PeerInfoScreenItem], transition: ContainedViewLayoutTransition) -> CGFloat {
-        self.backgroundNode.backgroundColor = presentationData.theme.list.itemBlocksBackgroundColor
+        if GhostSettings.glassProfile {
+            self.backgroundNode.backgroundColor = presentationData.theme.list.itemBlocksBackgroundColor.withAlphaComponent(presentationData.theme.overallDarkAppearance ? 0.45 : 0.6)
+        } else {
+            self.backgroundNode.backgroundColor = presentationData.theme.list.itemBlocksBackgroundColor
+        }
         self.topSeparatorNode.backgroundColor = presentationData.theme.list.itemBlocksSeparatorColor
         self.bottomSeparatorNode.backgroundColor = presentationData.theme.list.itemBlocksSeparatorColor
         

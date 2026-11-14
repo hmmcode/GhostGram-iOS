@@ -6,6 +6,14 @@ import TelegramUIPreferences
 
 public extension EnginePeer {
     var compactDisplayTitle: String {
+        return ghostDecorateTitle(self.ghostRawCompactDisplayTitle)
+    }
+
+    func displayTitle(strings: PresentationStrings, displayOrder: PresentationPersonNameOrder) -> String {
+        return ghostDecorateTitle(self.ghostRawDisplayTitle(strings: strings, displayOrder: displayOrder))
+    }
+
+    private var ghostRawCompactDisplayTitle: String {
         switch self {
         case let .user(user):
             if let nickname = GhostSettings.nickname(for: user.id.toInt64()) {
@@ -31,7 +39,7 @@ public extension EnginePeer {
         }
     }
 
-    func displayTitle(strings: PresentationStrings, displayOrder: PresentationPersonNameOrder) -> String {
+    private func ghostRawDisplayTitle(strings: PresentationStrings, displayOrder: PresentationPersonNameOrder) -> String {
         switch self {
         case let .user(user):
             if let nickname = GhostSettings.nickname(for: user.id.toInt64()) {
