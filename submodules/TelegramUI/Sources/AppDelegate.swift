@@ -690,7 +690,8 @@ private func extractAccountManagerState(records: AccountRecordsView<TelegramAcco
             encryptionProvider: OpenSSLEncryptionProvider(),
             deviceModelName: nil,
             useBetaFeatures: !buildConfig.isAppStoreBuild,
-            isICloudEnabled: buildConfig.isICloudEnabled,
+            // GhostGram: sideloaded builds have no iCloud entitlement, and touching CloudKit kills the app.
+            isICloudEnabled: false,
             // Only the main app passes a factory: extensions stay on MtProtoKit. Whether the Rust
             // engine runs is decided per account by resolveNetworkEngine (Debug Settings switch,
             // mtproto_engine_rust_disabled, the factory's own declines).
