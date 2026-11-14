@@ -568,7 +568,13 @@ private func extractAccountManagerState(records: AccountRecordsView<TelegramAcco
         try! PasscodeEnvironment.shared.configure(PasscodeConfiguration(appGroupIdentifier: appGroupName, processRole: .mainApp, biometricKeychainService: walletBiometricKeychainService), privateAccessGroup: {
             BuildConfig.keychainAccessGroup(baseAppBundleId: baseAppBundleId)
         })
-        let maybeAppGroupUrl = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupName)
+        // GhostGram: a sideloaded build often loses its App Group entitlement (free Apple ID signing).
+        // Keep the data in the app's own container instead of stopping at a black screen.
+        let maybeAppGroupUrl = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupName) ?? FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first.flatMap { url -> URL? in
+            let containerUrl = url.appendingPathComponent("GhostGramContainer", isDirectory: true)
+            let _ = try? FileManager.default.createDirectory(at: containerUrl, withIntermediateDirectories: true, attributes: nil)
+            return containerUrl
+        }
         
         let buildConfig = BuildConfig(baseAppBundleId: baseAppBundleId)
         self.buildConfig = buildConfig
