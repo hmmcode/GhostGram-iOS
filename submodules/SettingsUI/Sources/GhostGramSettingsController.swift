@@ -639,7 +639,7 @@ public func ghostGramSettingsController(context: AccountContext) -> ViewControll
             }).start()
             ghostInform(context: context, from: controller, title: "AMOLED-тема включена", text: "Чёрный фон везде, включая чаты. Вернуть прежнюю тему можно в «Оформлении».")
         case .openById:
-            let prompt = promptController(context: context, text: "ID пользователя, группы или канала", value: "", placeholder: "Например 123456789 или -100…", characterLimit: 24, apply: { value in
+            let prompt = promptController(context: context, text: "ID пользователя, группы или канала", value: "", placeholder: "Например 123456789 или -100…", characterLimit: 24, apply: { [weak controller] value in
                 guard let value = value else {
                     return
                 }
@@ -665,7 +665,7 @@ public func ghostGramSettingsController(context: AccountContext) -> ViewControll
                     return
                 }
                 let _ = (context.engine.data.get(EngineDataList(candidates.map(TelegramEngine.EngineData.Item.Peer.Peer.init(id:))))
-                |> deliverOnMainQueue).start(next: { [weak controller] peers in
+                |> deliverOnMainQueue).start(next: { peers in
                     if let peer = peers.compactMap({ $0 }).first, let infoController = context.sharedContext.makePeerInfoController(context: context, updatedPresentationData: nil, peer: peer, mode: .generic, avatarInitiallyExpanded: false, fromChat: false, requestsContext: nil) {
                         ghostPushController(controller, infoController)
                     } else {
