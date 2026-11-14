@@ -11,6 +11,7 @@ import TextFormat
 import LocalizedPeerData
 import LocalAuthentication
 import PromptUI
+import TelegramUIPreferences
 
 /// Posted after any GhostGram option changes (the Dynamic Island and panic mode listen for it).
 public let ghostGramSettingsChangedNotification = Notification.Name("GhostGramSettingsChanged")
@@ -58,6 +59,9 @@ private enum GhostToggle: Int32 {
     case hideNewsTab
     case hideBadge
     case dynamicIsland
+    case islandBadge
+    case minimalTabs
+    case hideOnCapture
     case hiddenChats
     case panicShake
     case protectMenu
@@ -104,6 +108,9 @@ private enum GhostToggle: Int32 {
         case .hideNewsTab: return "Скрыть вкладку новостей"
         case .hideBadge: return "Без счётчика на иконке"
         case .dynamicIsland: return "Призрак в Dynamic Island"
+        case .islandBadge: return "Плашка GhostGram у островка"
+        case .minimalTabs: return "Внизу только «Чаты» и «Профиль»"
+        case .hideOnCapture: return "Скрывать экран при записи"
         case .hiddenChats: return "Скрытые чаты"
         case .panicShake: return "Встряхнуть — выйти (паника)"
         case .protectMenu: return "Face ID на меню GhostGram"
@@ -152,6 +159,9 @@ private enum GhostToggle: Int32 {
         case .hideNewsTab: return GhostSettings.hideNewsTab
         case .hideBadge: return GhostSettings.hideAppBadge
         case .dynamicIsland: return GhostSettings.dynamicIsland
+        case .islandBadge: return GhostSettings.islandBadge
+        case .minimalTabs: return GhostSettings.minimalTabs
+        case .hideOnCapture: return GhostSettings.hideOnScreenRecording
         case .hiddenChats: return GhostSettings.hiddenChatsEnabled
         case .panicShake: return GhostSettings.panicShake
         case .protectMenu: return GhostSettings.protectMenu
@@ -200,6 +210,9 @@ private enum GhostToggle: Int32 {
         case .hideNewsTab: GhostSettings.hideNewsTab = value
         case .hideBadge: GhostSettings.hideAppBadge = value
         case .dynamicIsland: GhostSettings.dynamicIsland = value
+        case .islandBadge: GhostSettings.islandBadge = value
+        case .minimalTabs: GhostSettings.minimalTabs = value
+        case .hideOnCapture: GhostSettings.hideOnScreenRecording = value
         case .hiddenChats: GhostSettings.hiddenChatsEnabled = value
         case .panicShake: GhostSettings.panicShake = value
         case .protectMenu: GhostSettings.protectMenu = value
@@ -223,6 +236,8 @@ private enum GhostLink: Int32 {
     case nicknames
     case onlineNow
     case chatListTitle
+    case amoled
+    case openById
     case hiddenChats
     case lockedChats
     case stats
@@ -382,6 +397,7 @@ private func ghostGramSettingsEntries() -> [GhostGramSettingsEntry] {
     link(6, .watchList, "Сообщать, когда в сети", "\(GhostSettings.onlineWatchList.count)")
     link(6, .nicknames, "Локальные имена", "\(GhostSettings.nicknames.count)")
     link(6, .onlineNow, "Кто сейчас в сети")
+    link(6, .openById, "🔎 Открыть профиль по ID")
     footer(6, "Дата регистрации примерная — оценивается по ID. Локальные имена видите только вы.")
 
     header(7, "✨ ИНТЕРФЕЙС")
@@ -399,6 +415,9 @@ private func ghostGramSettingsEntries() -> [GhostGramSettingsEntry] {
     toggle(7, .hideNewsTab)
     toggle(7, .hideBadge)
     toggle(7, .dynamicIsland)
+    toggle(7, .islandBadge)
+    toggle(7, .minimalTabs)
+    link(7, .amoled, "🖤 Включить AMOLED-тему")
     link(7, .chatListTitle, "Заголовок списка чатов", GhostSettings.customChatListTitle ?? "Чаты")
     footer(7, "Часть изменений интерфейса применяется после перезапуска приложения.")
 
@@ -407,6 +426,7 @@ private func ghostGramSettingsEntries() -> [GhostGramSettingsEntry] {
     link(8, .hiddenChats, "Открыть скрытые чаты", "\(GhostSettings.hiddenChats.count)")
     link(8, .lockedChats, "Чаты под Face ID", "\(GhostSettings.lockedChats.count)")
     toggle(8, .panicShake)
+    toggle(8, .hideOnCapture)
     toggle(8, .protectMenu)
     footer(8, "Скрыть или закрыть чат: долгое нажатие на чат в списке. Паника: резко встряхните телефон — GhostGram свернётся, закрытые чаты снова потребуют Face ID.")
 
@@ -580,6 +600,57 @@ public func ghostGramSettingsController(context: AccountContext) -> ViewControll
             ghostPushController(controller, ghostPeerListController(context: context, kind: .nicknames))
         case .onlineNow:
             ghostPushController(controller, ghostOnlineNowController(context: context))
+        case .amoled:
+            let nightTheme = PresentationThemeReference.builtin(.night)
+            let _ = updatePresentationThemeSettingsInteractively(accountManager: context.sharedContext.accountManager, { current in
+                var updated = current.withUpdatedTheme(nightTheme)
+                var autoSwitch = updated.automaticThemeSwitchSetting
+                autoSwitch.theme = nightTheme
+                updated.automaticThemeSwitchSetting = autoSwitch
+                var wallpapers = updated.themeSpecificChatWallpapers
+                wallpapers[nightTheme.index] = .color(0x000000)
+                if let accentColor = updated.themeSpecificAccentColors[nightTheme.index] {
+                    wallpapers[coloredThemeIndex(reference: nightTheme, accentColor: accentColor)] = .color(0x000000)
+                }
+                return updated.withUpdatedThemeSpecificChatWallpapers(wallpapers)
+            }).start()
+            ghostInform(context: context, from: controller, title: "AMOLED-тема включена", text: "Чёрный фон везде, включая чаты. Вернуть прежнюю тему можно в «Оформлении».")
+        case .openById:
+            let prompt = promptController(context: context, text: "ID пользователя, группы или канала", value: "", placeholder: "Например 123456789 или -100…", characterLimit: 24, apply: { value in
+                guard let value = value else {
+                    return
+                }
+                var digits = value.trimmingCharacters(in: .whitespacesAndNewlines)
+                var candidates: [EnginePeer.Id] = []
+                if digits.hasPrefix("-100") {
+                    digits.removeFirst(4)
+                    if let raw = Int64(digits) {
+                        candidates.append(EnginePeer.Id(namespace: Namespaces.Peer.CloudChannel, id: EnginePeer.Id.Id._internalFromInt64Value(raw)))
+                    }
+                } else if digits.hasPrefix("-") {
+                    digits.removeFirst(1)
+                    if let raw = Int64(digits) {
+                        candidates.append(EnginePeer.Id(namespace: Namespaces.Peer.CloudGroup, id: EnginePeer.Id.Id._internalFromInt64Value(raw)))
+                    }
+                } else if let raw = Int64(digits) {
+                    for namespace in [Namespaces.Peer.CloudUser, Namespaces.Peer.CloudChannel, Namespaces.Peer.CloudGroup] {
+                        candidates.append(EnginePeer.Id(namespace: namespace, id: EnginePeer.Id.Id._internalFromInt64Value(raw)))
+                    }
+                }
+                if candidates.isEmpty {
+                    ghostInform(context: context, from: controller, title: "Неверный ID", text: "Нужны только цифры.")
+                    return
+                }
+                let _ = (context.engine.data.get(EngineDataList(candidates.map(TelegramEngine.EngineData.Item.Peer.Peer.init(id:))))
+                |> deliverOnMainQueue).start(next: { [weak controller] peers in
+                    if let peer = peers.compactMap({ $0 }).first, let infoController = context.sharedContext.makePeerInfoController(context: context, updatedPresentationData: nil, peer: peer, mode: .generic, avatarInitiallyExpanded: false, fromChat: false, requestsContext: nil) {
+                        ghostPushController(controller, infoController)
+                    } else {
+                        ghostInform(context: context, from: controller, title: "Профиль не найден", text: "Telegram открывает профиль по ID, только если этот человек или чат уже встречался вам: в общих группах, каналах, пересланных сообщениях. Если он где-то пересекался с вами, откройте тот чат и попробуйте снова.")
+                    }
+                })
+            })
+            controller.present(prompt, in: .window(.root))
         case .chatListTitle:
             let prompt = promptController(context: context, text: "Заголовок над списком чатов", value: GhostSettings.customChatListTitle ?? "", placeholder: "Пусто — «Чаты»", characterLimit: 40, apply: { value in
                 guard let value = value else {

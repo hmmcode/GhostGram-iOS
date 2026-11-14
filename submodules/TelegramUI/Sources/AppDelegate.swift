@@ -2155,6 +2155,8 @@ private func extractAccountManagerState(records: AccountRecordsView<TelegramAcco
     func handleDidBecomeActive() {
         GhostLiveActivityController.shared.start()
         GhostPanicController.shared.update()
+        GhostIslandBadge.shared.update()
+        GhostCaptureShield.shared.update()
         self.isInForegroundValue = true
         self.isInForegroundPromise.set(true)
         self.isActiveValue = true

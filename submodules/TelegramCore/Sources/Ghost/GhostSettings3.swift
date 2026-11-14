@@ -274,6 +274,24 @@ public extension GhostSettings {
         set { store.set(newValue, forKey: "ghost.noSwipeReply") }
     }
 
+    /// "GhostGram" pill around the Dynamic Island while the app is open.
+    static var islandBadge: Bool {
+        get { return flag("ghost.islandBadge", true) }
+        set { store.set(newValue, forKey: "ghost.islandBadge") }
+    }
+
+    /// Bottom bar with only Chats and Settings (no Calls, no News).
+    static var minimalTabs: Bool {
+        get { return flag("ghost.minimalTabs", false) }
+        set { store.set(newValue, forKey: "ghost.minimalTabs") }
+    }
+
+    /// Cover the app with black while the screen is being recorded or mirrored.
+    static var hideOnScreenRecording: Bool {
+        get { return flag("ghost.hideOnCapture", false) }
+        set { store.set(newValue, forKey: "ghost.hideOnCapture") }
+    }
+
     /// Read directly by the Display module, which cannot see TelegramCore.
     static var disableHaptics: Bool {
         get { return flag("ghost.noHaptics", false) }
