@@ -41,13 +41,14 @@ final class GhostIslandBadge {
         let islandWidth: CGFloat = 126.0
         let islandHeight: CGFloat = 37.0
         let islandTop: CGFloat = 11.0
-        let sideExtension: CGFloat = 22.0
-        let bottomExtension: CGFloat = 17.0
+        let sideExtension: CGFloat = 10.0
+        let topExtension: CGFloat = 3.0
+        let bottomExtension: CGFloat = 13.0
         let frame = CGRect(
             x: floor((screenBounds.width - islandWidth) / 2.0) - sideExtension,
-            y: islandTop,
+            y: islandTop - topExtension,
             width: islandWidth + sideExtension * 2.0,
-            height: islandHeight + bottomExtension
+            height: topExtension + islandHeight + bottomExtension
         )
 
         let window: UIWindow
@@ -63,14 +64,16 @@ final class GhostIslandBadge {
             let rootController = UIViewController()
             rootController.view.backgroundColor = .black
             rootController.view.isUserInteractionEnabled = false
-            rootController.view.layer.cornerRadius = 22.0
+            rootController.view.layer.cornerRadius = 24.0
             rootController.view.layer.cornerCurve = .continuous
             rootController.view.clipsToBounds = true
 
             let label = UILabel()
             label.text = "👻 GhostGram"
             label.textColor = .white
-            label.font = UIFont.systemFont(ofSize: 11.0, weight: .semibold)
+            label.font = UIFont.systemFont(ofSize: 9.5, weight: .semibold)
+            label.adjustsFontSizeToFitWidth = true
+            label.minimumScaleFactor = 0.8
             label.textAlignment = .center
             label.tag = 1
             rootController.view.addSubview(label)
@@ -82,7 +85,7 @@ final class GhostIslandBadge {
         if let rootView = window.rootViewController?.view {
             rootView.frame = CGRect(origin: .zero, size: frame.size)
             if let label = rootView.viewWithTag(1) {
-                label.frame = CGRect(x: 0.0, y: islandHeight, width: frame.width, height: bottomExtension - 3.0)
+                label.frame = CGRect(x: 24.0, y: topExtension + islandHeight - 1.0, width: frame.width - 48.0, height: bottomExtension)
             }
         }
         window.isHidden = false

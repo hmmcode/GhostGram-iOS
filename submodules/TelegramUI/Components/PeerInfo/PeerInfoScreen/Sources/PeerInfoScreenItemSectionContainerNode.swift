@@ -132,6 +132,37 @@ final class PeerInfoScreenItemSectionContainerNode: ASDisplayNode {
         transition.updateFrame(node: self.topSeparatorNode, frame: CGRect(origin: CGPoint(x: 0.0, y: contentWithBackgroundOffset - UIScreenPixel), size: CGSize(width: width, height: UIScreenPixel)))
         transition.updateFrame(node: self.bottomSeparatorNode, frame: CGRect(origin: CGPoint(x: 0.0, y: contentWithBackgroundHeight), size: CGSize(width: width, height: UIScreenPixel)))
         
+        if GhostSettings.glassProfile {
+            // The stock corner masks are images filled with the blocks background colour; over the
+            // glass backdrop they show up as dark corners and edges. Hide them and round the card itself.
+            var cornerImages: [UIImage] = []
+            for glass in [false, true] {
+                for (top, bottom) in [(true, false), (false, true), (true, true)] {
+                    if let image = PresentationResourcesItemList.cornersImage(presentationData.theme, top: top, bottom: bottom, glass: glass) {
+                        cornerImages.append(image)
+                    }
+                }
+            }
+            func hideCornerMasks(_ node: ASDisplayNode) {
+                for subnode in node.subnodes ?? [] {
+                    if let imageNode = subnode as? ASImageNode, let image = imageNode.image, cornerImages.contains(where: { $0 === image }) {
+                        imageNode.isHidden = true
+                    }
+                    hideCornerMasks(subnode)
+                }
+            }
+            for (_, itemNode) in self.itemNodes {
+                hideCornerMasks(itemNode)
+            }
+            let radius: CGFloat = hasCorners ? 26.0 : 0.0
+            self.backgroundNode.cornerRadius = radius
+            self.backgroundNode.layer.cornerCurve = .continuous
+            self.itemContainerNode.cornerRadius = radius
+            self.itemContainerNode.layer.cornerCurve = .continuous
+            self.topSeparatorNode.isHidden = true
+            self.bottomSeparatorNode.isHidden = true
+        }
+
         if contentHeight.isZero {
             transition.updateAlpha(node: self.topSeparatorNode, alpha: 0.0)
             transition.updateAlpha(node: self.bottomSeparatorNode, alpha: 0.0)
