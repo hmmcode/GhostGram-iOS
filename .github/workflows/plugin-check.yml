@@ -27,10 +27,8 @@ jobs:
           sed '/^import TelegramCore$/d' submodules/SettingsUI/Sources/GhostPluginsScreen.swift > /tmp/tc/GhostPluginsScreen.swift
           sed '/^import TelegramCore$/d' submodules/TelegramUI/Sources/GhostPluginUI.swift > /tmp/tc/GhostPluginUI.swift
           SDK=$(xcrun --sdk iphoneos --show-sdk-path)
-          for mode in 5 6; do
-            echo "== swift-version $mode =="
-            xcrun swiftc -typecheck -sdk "$SDK" -target arm64-apple-ios15.0 -swift-version $mode -warnings-as-errors /tmp/tc/*.swift || { [ $mode = 6 ] && echo "::warning::swift 6 mode reports issues (informational)"; [ $mode = 5 ] && exit 1; }
-          done
+          xcrun swiftc -typecheck -sdk "$SDK" -target arm64-apple-ios15.0 -swift-version 5 -warnings-as-errors /tmp/tc/*.swift
+          echo TYPECHECK OK
 
       - name: Run the prelude in JavaScriptCore
         run: |
