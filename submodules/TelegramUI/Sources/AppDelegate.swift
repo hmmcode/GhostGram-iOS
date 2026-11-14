@@ -965,7 +965,10 @@ private func extractAccountManagerState(records: AccountRecordsView<TelegramAcco
                 }
             })
         }, requestSiriAuthorization: { completion in
-            if #available(iOS 10, *) {
+            // GhostGram: no Siri entitlement in sideloaded builds, INPreferences would throw.
+            if ("".isEmpty) {
+                completion(false)
+            } else if #available(iOS 10, *) {
                 INPreferences.requestSiriAuthorization { status in
                     if case .authorized = status {
                         completion(true)
@@ -977,7 +980,7 @@ private func extractAccountManagerState(records: AccountRecordsView<TelegramAcco
                 completion(false)
             }
         }, siriAuthorization: {
-            if buildConfig.isSiriEnabled {
+            if buildConfig.isSiriEnabled && !"".isEmpty {
                 if #available(iOS 10, *) {
                     switch INPreferences.siriAuthorizationStatus() {
                     case .authorized:
