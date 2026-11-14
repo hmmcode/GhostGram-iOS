@@ -136,6 +136,9 @@ final class PeerInfoHeaderNode: ASDisplayNode {
     var credibilityIconSize: CGSize?
     let titleExpandedCredibilityIconView: ComponentHostView<Empty>
     var titleExpandedCredibilityIconSize: CGSize?
+    let ghostBadgeView = GhostGlassBadgeView(frame: CGRect(origin: .zero, size: GhostGlassBadgeView.size))
+    let ghostExpandedBadgeView = GhostGlassBadgeView(frame: CGRect(origin: .zero, size: GhostGlassBadgeView.size))
+    var ghostShowBadge = false
     
     let titleVerifiedIconView: ComponentHostView<Empty>
     var verifiedIconSize: CGSize?
@@ -316,6 +319,10 @@ final class PeerInfoHeaderNode: ASDisplayNode {
         
         self.titleExpandedCredibilityIconView = ComponentHostView<Empty>()
         self.titleNode.stateNode(forKey: TitleNodeStateExpanded)?.view.addSubview(self.titleExpandedCredibilityIconView)
+        self.ghostBadgeView.isHidden = true
+        self.ghostExpandedBadgeView.isHidden = true
+        self.titleNode.stateNode(forKey: TitleNodeStateRegular)?.view.addSubview(self.ghostBadgeView)
+        self.titleNode.stateNode(forKey: TitleNodeStateExpanded)?.view.addSubview(self.ghostExpandedBadgeView)
         
         self.titleVerifiedIconView = ComponentHostView<Empty>()
         self.titleNode.stateNode(forKey: TitleNodeStateRegular)?.view.addSubview(self.titleVerifiedIconView)
@@ -1293,6 +1300,13 @@ final class PeerInfoHeaderNode: ASDisplayNode {
                 title = peer.displayTitle(strings: presentationData.strings, displayOrder: presentationData.nameDisplayOrder)
             }
             title = title.replacingOccurrences(of: "\u{1160}", with: "").replacingOccurrences(of: "\u{3164}", with: "")
+            self.ghostShowBadge = false
+            if case let .user(ghostUser) = peer, ghostHasNameMarker(ghostUser.lastName), GhostSettings.showGhostBadges {
+                self.ghostShowBadge = true
+                if title.hasSuffix(" 👻") {
+                    title = String(title.dropLast(2))
+                }
+            }
             if title.replacingOccurrences(of: "\u{fe0e}", with: "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 title = "" //"\u{00A0}"
             }
@@ -1725,6 +1739,17 @@ final class PeerInfoHeaderNode: ASDisplayNode {
             
             nextIconX += 4.0 + credibilityIconSize.width
             nextExpandedIconX += 4.0 + titleExpandedCredibilityIconSize.width
+        }
+
+        self.ghostBadgeView.isHidden = !self.ghostShowBadge
+        self.ghostExpandedBadgeView.isHidden = !self.ghostShowBadge
+        if self.ghostShowBadge {
+            let badgeSize = GhostGlassBadgeView.size
+            titleHorizontalOffset -= (badgeSize.width + 4.0) / 2.0
+            transition.updateFrame(view: self.ghostBadgeView, frame: CGRect(origin: CGPoint(x: nextIconX + 4.0, y: floor((titleSize.height - badgeSize.height) / 2.0)), size: badgeSize))
+            transition.updateFrame(view: self.ghostExpandedBadgeView, frame: CGRect(origin: CGPoint(x: nextExpandedIconX + 4.0, y: floor((titleExpandedSize.height - badgeSize.height) / 2.0) + 1.0), size: badgeSize))
+            nextIconX += 4.0 + badgeSize.width
+            nextExpandedIconX += 4.0 + badgeSize.width
         }
                 
         if let verifiedIconSize = self.verifiedIconSize, let titleExpandedVerifiedIconSize = self.titleExpandedVerifiedIconSize, verifiedIconSize.width > 0.0 {
@@ -2911,6 +2936,13 @@ final class PeerInfoHeaderNode: ASDisplayNode {
         }
         
         if !(self.state?.isEditing ?? false) {
+            if self.ghostShowBadge {
+                let ghostBadge = self.isAvatarExpanded ? self.ghostExpandedBadgeView : self.ghostBadgeView
+                let ghostPoint = self.view.convert(point, to: ghostBadge)
+                if ghostBadge.point(inside: ghostPoint, with: event) {
+                    return ghostBadge
+                }
+            }
             switch self.currentCredibilityIcon {
             case .premium:
                 let iconFrame = self.titleCredibilityIconView.convert(self.titleCredibilityIconView.bounds, to: self.view)
