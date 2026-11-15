@@ -128,14 +128,23 @@ let ghostPluginPrelude: String = #"""
   function sendVoice(chatId, wave, options) {
     options = options || {};
     if (chatId === undefined || chatId === null || chatId === '') throw new Error('GG.sendVoice: не указан чат');
+    if (typeof N.sendVoice !== 'function') throw new Error('Голосовые с рисунком работают с GhostGram v11');
     if (!Array.isArray(wave) || !wave.length) throw new Error('GG.sendVoice: волна — это массив чисел 0..31');
     var bars = wave.slice(0, 100).map(function (v) { v = Math.round(Number(v) || 0); return v < 0 ? 0 : (v > 31 ? 31 : v); });
     var duration = Math.round(Number(options.duration) || 5);
     N.sendVoice(String(chatId), JSON.stringify(bars), duration, Number(options.replyTo) || 0);
   }
 
+  function pickRound(chatId, options) {
+    options = options || {};
+    if (chatId === undefined || chatId === null || chatId === '') throw new Error('GG.pickRound: не указан чат');
+    if (typeof N.pickRound !== 'function') throw new Error('Кружки работают с GhostGram v12');
+    N.pickRound(String(chatId), Number(options.replyTo) || 0, Math.round(Number(options.seconds) || 5));
+  }
+
   function wrapMessage(message) {
     message.reply = function (text) { send(message.chatId, text, { replyTo: message.id }); };
+    message.round = function (options) { pickRound(message.chatId, Object.assign({ replyTo: message.replyTo }, options || {})); };
     message.voice = function (wave, options) { sendVoice(message.chatId, wave, Object.assign({ replyTo: message.replyTo }, options || {})); };
     message.respond = function (text) { send(message.chatId, text); };
     return message;
@@ -207,6 +216,7 @@ let ghostPluginPrelude: String = #"""
     },
     send: send,
     sendVoice: sendVoice,
+    pickRound: pickRound,
     notify: function (title, body, options) {
       options = options || {};
       N.notify(str(title), body === undefined ? '' : str(body), Number(options.delay) || 0, options.id ? String(options.id) : '');

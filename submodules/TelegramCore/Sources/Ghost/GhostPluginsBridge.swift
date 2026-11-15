@@ -211,6 +211,27 @@ public func ghostPluginsAttach(account: Account) {
         let _ = enqueueMessages(account: account, peerId: peerId, messages: [.message(text: "", attributes: [], inlineStickers: [:], mediaReference: .standalone(media: file), threadId: nil, replyToMessageId: reply, replyToStoryId: nil, localGroupingKey: nil, correlationId: nil, bubbleUpEmojiOrStickersets: [])]).start()
     }
 
+    plugins.sendRoundVideo = { [weak account] chatId, video, thumbnail, duration, side, replyTo in
+        guard let account = account, let rawId = Int64(chatId) else {
+            return
+        }
+        let peerId = PeerId(rawId)
+        var reply: EngineMessageReplySubject?
+        if replyTo != 0 {
+            reply = EngineMessageReplySubject(messageId: MessageId(peerId: peerId, namespace: Namespaces.Message.Cloud, id: replyTo), quote: nil, innerSubject: nil)
+        }
+        let resource = LocalFileMediaResource(fileId: Int64.random(in: Int64.min ... Int64.max))
+        account.postbox.mediaBox.storeResourceData(resource.id, data: video)
+        var previews: [TelegramMediaImageRepresentation] = []
+        if let thumbnail = thumbnail {
+            let thumbnailResource = LocalFileMediaResource(fileId: Int64.random(in: Int64.min ... Int64.max))
+            account.postbox.mediaBox.storeResourceData(thumbnailResource.id, data: thumbnail)
+            previews.append(TelegramMediaImageRepresentation(dimensions: PixelDimensions(width: Int32(side), height: Int32(side)), resource: thumbnailResource, progressiveSizes: [], immediateThumbnailData: nil, hasVideo: false, isPersonal: false))
+        }
+        let file = TelegramMediaFile(fileId: MediaId(namespace: Namespaces.Media.LocalFile, id: Int64.random(in: Int64.min ... Int64.max)), partialReference: nil, resource: resource, previewRepresentations: previews, videoThumbnails: [], immediateThumbnailData: nil, mimeType: "video/mp4", size: Int64(video.count), attributes: [.FileName(fileName: "video.mp4"), .Video(duration: max(1.0, duration), size: PixelDimensions(width: Int32(side), height: Int32(side)), flags: [.instantRoundVideo], preloadSize: nil, coverTime: nil, videoCodec: nil)], alternativeRepresentations: [])
+        let _ = enqueueMessages(account: account, peerId: peerId, messages: [.message(text: "", attributes: [], inlineStickers: [:], mediaReference: .standalone(media: file), threadId: nil, replyToMessageId: reply, replyToStoryId: nil, localGroupingKey: nil, correlationId: nil, bubbleUpEmojiOrStickersets: [])]).start()
+    }
+
     plugins.savedMessagesFiles = { [weak account] completion in
         guard let account = account else {
             completion([])

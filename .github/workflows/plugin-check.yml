@@ -26,6 +26,8 @@ jobs:
           cp submodules/TelegramCore/Sources/Ghost/GhostPluginRuntime.swift submodules/TelegramCore/Sources/Ghost/GhostPluginPrelude.swift /tmp/tc/
           sed '/^import TelegramCore$/d' submodules/SettingsUI/Sources/GhostPluginsScreen.swift > /tmp/tc/GhostPluginsScreen.swift
           sed '/^import TelegramCore$/d' submodules/TelegramUI/Sources/GhostPluginUI.swift > /tmp/tc/GhostPluginUI.swift
+          sed '/^import TelegramCore$/d' submodules/TelegramUI/Sources/GhostRoundVideoPicker.swift > /tmp/tc/GhostRoundVideoPicker.swift
+          cp submodules/TelegramUI/Sources/GhostRoundVideoMaker.swift /tmp/tc/
           SDK=$(xcrun --sdk iphoneos --show-sdk-path)
           xcrun swiftc -typecheck -sdk "$SDK" -target arm64-apple-ios15.0 -swift-version 5 -warnings-as-errors /tmp/tc/*.swift
           echo TYPECHECK OK
@@ -96,3 +98,60 @@ jobs:
           opusinfo /tmp/ogg/silent.ogg
           opusdec /tmp/ogg/silent.ogg /tmp/ogg/out.wav
           afinfo /tmp/ogg/out.wav | grep -i duration
+
+      - name: Convert video, GIF and picture into round clips on macOS
+        run: |
+          set -e
+          mkdir -p /tmp/rv
+          cat > /tmp/rv/main.swift <<'SWIFT'
+          import Foundation
+          import AVFoundation
+          import CoreGraphics
+          import ImageIO
+          func picture(_ w: Int, _ h: Int, _ r: CGFloat) -> CGImage {
+            let c = CGContext(data: nil, width: w, height: h, bitsPerComponent: 8, bytesPerRow: 0, space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedFirst.rawValue)!
+            c.setFillColor(CGColor(red: r, green: 0.3, blue: 0.8, alpha: 1)); c.fill(CGRect(x: 0, y: 0, width: w, height: h))
+            return c.makeImage()!
+          }
+          func wait(_ run: (@escaping (Result<GhostRoundVideoMaker.Result, Error>) -> Void) -> Void) -> GhostRoundVideoMaker.Result {
+            let s = DispatchSemaphore(value: 0); var out: Result<GhostRoundVideoMaker.Result, Error>!
+            run { out = $0; s.signal() }; s.wait()
+            switch out! { case .success(let r): return r; case .failure(let e): print("FAIL", e); exit(1) }
+          }
+          func check(_ name: String, _ r: GhostRoundVideoMaker.Result, minDur: Double) {
+            let a = AVURLAsset(url: r.url); let t = a.tracks(withMediaType: .video).first!
+            let size = t.naturalSize; let d = CMTimeGetSeconds(a.duration)
+            let bytes = (try? Data(contentsOf: r.url).count) ?? 0
+            print(name, "size", size, "dur", d, "reported", r.duration, "bytes", bytes, "thumb", r.thumbnail != nil)
+            if Int(size.width) != 384 || Int(size.height) != 384 || d < minDur || r.thumbnail == nil { print("BAD", name); exit(1) }
+          }
+          let still = wait { GhostRoundVideoMaker.fromImage(picture(1170, 2532, 0.9), seconds: 5, completion: $0) }
+          check("screenshot", still, minDur: 4.5)
+          let gifData = NSMutableData()
+          let dest = CGImageDestinationCreateWithData(gifData, "com.compuserve.gif" as CFString, 6, nil)!
+          for i in 0 ..< 6 { CGImageDestinationAddImage(dest, picture(480, 270, CGFloat(i) / 6), [kCGImagePropertyGIFDictionary: [kCGImagePropertyGIFDelayTime: 0.1]] as CFDictionary) }
+          _ = CGImageDestinationFinalize(dest)
+          let gif = wait { GhostRoundVideoMaker.fromAnimatedImage(gifData as Data, minSeconds: 3, completion: $0) }
+          check("gif", gif, minDur: 2.9)
+          // A wide 16:9 clip made from frames, then cropped to a circle-ready square.
+          let wideMaker = wait { GhostRoundVideoMaker.fromImage(picture(384, 384, 0.2), seconds: 4, completion: $0) }
+          let settings: [String: Any] = [AVVideoCodecKey: AVVideoCodecType.h264, AVVideoWidthKey: 1280, AVVideoHeightKey: 720]
+          let wideURL = URL(fileURLWithPath: "/tmp/rv/wide.mp4"); try? FileManager.default.removeItem(at: wideURL)
+          let w = try! AVAssetWriter(outputURL: wideURL, fileType: .mp4)
+          let input = AVAssetWriterInput(mediaType: .video, outputSettings: settings)
+          let ad = AVAssetWriterInputPixelBufferAdaptor(assetWriterInput: input, sourcePixelBufferAttributes: [kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA, kCVPixelBufferWidthKey as String: 1280, kCVPixelBufferHeightKey as String: 720])
+          w.add(input); w.startWriting(); w.startSession(atSourceTime: .zero)
+          for f in 0 ..< 90 {
+            while !input.isReadyForMoreMediaData { Thread.sleep(forTimeInterval: 0.01) }
+            var pb: CVPixelBuffer?; CVPixelBufferPoolCreatePixelBuffer(nil, ad.pixelBufferPool!, &pb)
+            _ = ad.append(pb!, withPresentationTime: CMTime(value: CMTimeValue(f), timescale: 30))
+          }
+          input.markAsFinished(); let s2 = DispatchSemaphore(value: 0); w.finishWriting { s2.signal() }; s2.wait()
+          _ = wideMaker
+          let video = wait { GhostRoundVideoMaker.fromVideo(wideURL, completion: $0) }
+          check("video", video, minDur: 2.8)
+          print("ROUND OK")
+          SWIFT
+          sed -i '' 's/^          //' /tmp/rv/main.swift
+          xcrun swiftc -sdk "$(xcrun --sdk macosx --show-sdk-path)" -o /tmp/rv/t /tmp/rv/main.swift submodules/TelegramUI/Sources/GhostRoundVideoMaker.swift
+          /tmp/rv/t

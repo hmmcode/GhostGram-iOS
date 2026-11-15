@@ -50,6 +50,8 @@ public enum GhostPluginUIRequest {
     case toast(String)
     case copy(String)
     case notify(title: String, text: String, identifier: String)
+    /// Opens the gallery and sends the chosen video, GIF or picture as a round video message.
+    case pickRoundVideo(chatId: String, replyTo: Int32, seconds: Int)
 }
 
 /// What should happen to a message the user is sending.
@@ -102,6 +104,8 @@ public final class GhostPlugins {
     public var sendMessage: ((String, String, Int32) -> Void)?
     /// Sends a silent voice message with a drawn waveform: chat id, bar heights 0...31, duration in seconds, reply id.
     public var sendVoice: ((String, [Int], Int, Int32) -> Void)?
+    /// Sends a square mp4 as a round video message: chat id, mp4 bytes, JPEG preview, duration, side in pixels, reply id.
+    public var sendRoundVideo: ((String, Data, Data?, Double, Int, Int32) -> Void)?
     /// Shows alerts, toasts and banners. Called on the plugin queue.
     public var uiHandler: ((GhostPluginUIRequest) -> Void)?
     /// Looks up recent .js files in Saved Messages and returns (file name, contents).
@@ -887,6 +891,22 @@ public final class GhostPlugins {
             }
         }
         define("sendVoice", unsafeBitCast(sendVoice, to: AnyObject.self))
+
+        let pickRound: @convention(block) (JSValue, JSValue, JSValue) -> Void = { [weak self] chatId, replyTo, seconds in
+            guard let self = self else {
+                return
+            }
+            let chat = chatId.toString() ?? ""
+            if chat.isEmpty {
+                return
+            }
+            guard let handler = self.uiHandler, self.sendRoundVideo != nil else {
+                self.appendLog(id, "error", "Кружки пока недоступны: аккаунт ещё не загрузился")
+                return
+            }
+            handler(.pickRoundVideo(chatId: chat, replyTo: replyTo.toInt32(), seconds: max(1, min(60, Int(seconds.toInt32())))))
+        }
+        define("pickRound", unsafeBitCast(pickRound, to: AnyObject.self))
 
         let notify: @convention(block) (JSValue, JSValue, JSValue, JSValue) -> Void = { [weak self] title, body, delay, identifier in
             let titleText = title.toString() ?? ""

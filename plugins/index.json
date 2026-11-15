@@ -2,6 +2,14 @@
   "version": 1,
   "plugins": [
     {
+      "id": "round",
+      "name": "Кружок из чего угодно",
+      "version": "1.0",
+      "author": "GhostGram",
+      "description": ".round — выбираешь в галерее любое видео, гифку, скрин или фото, и оно уходит кружком. Нужна версия GhostGram v12+.",
+      "file": "round.js"
+    },
+    {
       "id": "wave",
       "name": "Рисунок в голосовом",
       "version": "1.0",
