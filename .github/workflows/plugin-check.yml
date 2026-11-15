@@ -81,7 +81,7 @@ jobs:
         run: |
           set -e
           mkdir -p /tmp/ogg
-          sed -n '/^\/\/\/ Packs bar heights/,$p' submodules/TelegramCore/Sources/Ghost/GhostPluginsBridge.swift > /tmp/ogg/ogg.swift
+          { echo 'import Foundation'; sed -n '/^\/\/\/ Packs bar heights/,$p' submodules/TelegramCore/Sources/Ghost/GhostPluginsBridge.swift; } > /tmp/ogg/ogg.swift
           cat > /tmp/ogg/main.swift <<'SWIFT'
           import Foundation
           try! ghostSilentOggOpus(seconds: 7).write(to: URL(fileURLWithPath: "/tmp/ogg/silent.ogg"))
