@@ -31,6 +31,7 @@
 | Запуск плагина | `GG.on('start', () => { … })` |
 | Изменение настройки | `GG.on('settings', ({key}) => { … })` |
 | Отправить | `GG.send(chatId, text, {replyTo})`, `msg.reply(text)`, `msg.respond(text)` |
+| Голосовое с рисунком (v11+) | `GG.sendVoice(chatId, [0..31 × до 100], {duration, replyTo})`, `msg.voice(wave, {duration})` — беззвучное голосовое, волна рисуется из чисел |
 | Уведомление | `GG.notify(title, body, {delay: секунды, id})`, `GG.cancelNotify(id)` |
 | Окно / тост / буфер | `GG.alert(title, text)`, `GG.toast(text)`, `GG.copy(text)` |
 | Настройки (экран плагина) | `GG.settings([{key, title, type: 'bool'\|'text'\|'number'\|'choice', default, options, hint}])` |

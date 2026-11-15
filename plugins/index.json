@@ -2,6 +2,14 @@
   "version": 1,
   "plugins": [
     {
+      "id": "wave",
+      "name": "Рисунок в голосовом",
+      "version": "1.0",
+      "author": "GhostGram",
+      "description": "Голосовое без звука, но с нарисованной волной: .heart, .wave пульс, .wave горы, свои цифры. Нужна версия GhostGram v11+.",
+      "file": "wave.js"
+    },
+    {
       "id": "calc",
       "name": "Калькулятор",
       "version": "1.0",

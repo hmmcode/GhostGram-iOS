@@ -76,3 +76,23 @@ jobs:
           SDK=$(xcrun --sdk macosx --show-sdk-path)
           xcrun swiftc -sdk "$SDK" -o /tmp/tc/jsc_test /tmp/tc/main.swift submodules/TelegramCore/Sources/Ghost/GhostPluginPrelude.swift
           /tmp/tc/jsc_test plugins/*.js /tmp/tc/async.js
+
+      - name: Check the silent Ogg Opus writer
+        run: |
+          set -e
+          mkdir -p /tmp/ogg
+          sed -n '/^\/\/\/ Packs bar heights/,$p' submodules/TelegramCore/Sources/Ghost/GhostPluginsBridge.swift > /tmp/ogg/ogg.swift
+          cat > /tmp/ogg/main.swift <<'SWIFT'
+          import Foundation
+          try! ghostSilentOggOpus(seconds: 7).write(to: URL(fileURLWithPath: "/tmp/ogg/silent.ogg"))
+          let bits = ghostWaveformBitstream([31, 0, 17, 5] + Array(repeating: 9, count: 96))
+          print("bitstream bytes", bits.count, Array(bits.prefix(4)))
+          SWIFT
+          sed -i '' 's/^          //' /tmp/ogg/main.swift
+          xcrun swiftc -sdk "$(xcrun --sdk macosx --show-sdk-path)" -o /tmp/ogg/t /tmp/ogg/main.swift /tmp/ogg/ogg.swift
+          /tmp/ogg/t
+          ls -la /tmp/ogg/silent.ogg
+          brew install opus-tools >/dev/null 2>&1 || true
+          opusinfo /tmp/ogg/silent.ogg
+          opusdec /tmp/ogg/silent.ogg /tmp/ogg/out.wav
+          afinfo /tmp/ogg/out.wav | grep -i duration

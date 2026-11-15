@@ -194,6 +194,23 @@ public func ghostPluginsAttach(account: Account) {
         let _ = enqueueMessages(account: account, peerId: peerId, messages: [.message(text: text, attributes: [], inlineStickers: [:], mediaReference: nil, threadId: nil, replyToMessageId: reply, replyToStoryId: nil, localGroupingKey: nil, correlationId: nil, bubbleUpEmojiOrStickersets: [])]).start()
     }
 
+    plugins.sendVoice = { [weak account] chatId, bars, seconds, replyTo in
+        guard let account = account, let rawId = Int64(chatId) else {
+            return
+        }
+        let peerId = PeerId(rawId)
+        var reply: EngineMessageReplySubject?
+        if replyTo != 0 {
+            reply = EngineMessageReplySubject(messageId: MessageId(peerId: peerId, namespace: Namespaces.Message.Cloud, id: replyTo), quote: nil, innerSubject: nil)
+        }
+        let audio = ghostSilentOggOpus(seconds: seconds)
+        let randomId = Int64.random(in: Int64.min ... Int64.max)
+        let resource = LocalFileMediaResource(fileId: randomId)
+        account.postbox.mediaBox.storeResourceData(resource.id, data: audio)
+        let file = TelegramMediaFile(fileId: MediaId(namespace: Namespaces.Media.LocalFile, id: randomId), partialReference: nil, resource: resource, previewRepresentations: [], videoThumbnails: [], immediateThumbnailData: nil, mimeType: "audio/ogg", size: Int64(audio.count), attributes: [.Audio(isVoice: true, duration: seconds, title: nil, performer: nil, waveform: ghostWaveformBitstream(bars))], alternativeRepresentations: [])
+        let _ = enqueueMessages(account: account, peerId: peerId, messages: [.message(text: "", attributes: [], inlineStickers: [:], mediaReference: .standalone(media: file), threadId: nil, replyToMessageId: reply, replyToStoryId: nil, localGroupingKey: nil, correlationId: nil, bubbleUpEmojiOrStickersets: [])]).start()
+    }
+
     plugins.savedMessagesFiles = { [weak account] completion in
         guard let account = account else {
             completion([])
@@ -266,4 +283,99 @@ public func ghostPluginsAttach(account: Account) {
     ghostPluginBridgeLock.unlock()
 
     plugins.start()
+}
+
+
+/// Packs bar heights (0...31) into Telegram's 5-bit little-endian waveform bitstream.
+func ghostWaveformBitstream(_ bars: [Int]) -> Data {
+    let bitCount = bars.count * 5
+    var bytes = [UInt8](repeating: 0, count: (bitCount + 7) / 8)
+    for (index, bar) in bars.enumerated() {
+        let value = max(0, min(31, bar))
+        for bit in 0 ..< 5 where (value >> bit) & 1 == 1 {
+            let position = index * 5 + bit
+            bytes[position / 8] |= UInt8(1 << (position % 8))
+        }
+    }
+    return Data(bytes)
+}
+
+private let ghostOggCrcTable: [UInt32] = (0 ..< 256).map { index -> UInt32 in
+    var crc = UInt32(index) << 24
+    for _ in 0 ..< 8 {
+        crc = (crc & 0x80000000) != 0 ? (crc << 1) ^ 0x04C11DB7 : (crc << 1)
+    }
+    return crc
+}
+
+private func ghostOggPage(packets: [[UInt8]], headerType: UInt8, granule: Int64, serial: UInt32, sequence: UInt32) -> Data {
+    var segments: [UInt8] = []
+    var body: [UInt8] = []
+    for packet in packets {
+        var remaining = packet.count
+        while remaining >= 255 {
+            segments.append(255)
+            remaining -= 255
+        }
+        segments.append(UInt8(remaining))
+        body.append(contentsOf: packet)
+    }
+    var page: [UInt8] = Array("OggS".utf8)
+    page.append(0)
+    page.append(headerType)
+    withUnsafeBytes(of: UInt64(bitPattern: granule).littleEndian) { page.append(contentsOf: $0) }
+    withUnsafeBytes(of: serial.littleEndian) { page.append(contentsOf: $0) }
+    withUnsafeBytes(of: sequence.littleEndian) { page.append(contentsOf: $0) }
+    let crcOffset = page.count
+    page.append(contentsOf: [0, 0, 0, 0])
+    page.append(UInt8(segments.count))
+    page.append(contentsOf: segments)
+    page.append(contentsOf: body)
+    var crc: UInt32 = 0
+    for byte in page {
+        crc = (crc << 8) ^ ghostOggCrcTable[Int(((crc >> 24) & 0xff) ^ UInt32(byte))]
+    }
+    withUnsafeBytes(of: crc.littleEndian) { raw in
+        for i in 0 ..< 4 {
+            page[crcOffset + i] = raw[i]
+        }
+    }
+    return Data(page)
+}
+
+/// A valid mono Ogg Opus file of the given length made of silent 20 ms frames.
+func ghostSilentOggOpus(seconds: Int) -> Data {
+    let serial = UInt32.random(in: 1 ... UInt32.max)
+    let preSkip: UInt16 = 312
+    var head: [UInt8] = Array("OpusHead".utf8)
+    head.append(1)
+    head.append(1)
+    withUnsafeBytes(of: preSkip.littleEndian) { head.append(contentsOf: $0) }
+    withUnsafeBytes(of: UInt32(48000).littleEndian) { head.append(contentsOf: $0) }
+    head.append(contentsOf: [0, 0, 0])
+    var tags: [UInt8] = Array("OpusTags".utf8)
+    let vendor = Array("GhostGram".utf8)
+    withUnsafeBytes(of: UInt32(vendor.count).littleEndian) { tags.append(contentsOf: $0) }
+    tags.append(contentsOf: vendor)
+    tags.append(contentsOf: [0, 0, 0, 0])
+
+    var result = Data()
+    var sequence: UInt32 = 0
+    result.append(ghostOggPage(packets: [head], headerType: 0x02, granule: 0, serial: serial, sequence: sequence))
+    sequence += 1
+    result.append(ghostOggPage(packets: [tags], headerType: 0x00, granule: 0, serial: serial, sequence: sequence))
+    sequence += 1
+
+    let silentFrame: [UInt8] = [0xF8, 0xFF, 0xFE]
+    let totalFrames = max(1, seconds) * 50
+    var written = 0
+    while written < totalFrames {
+        let count = min(50, totalFrames - written)
+        written += count
+        let isLast = written == totalFrames
+        let granule = Int64(preSkip) + Int64(written) * 960
+        result.append(ghostOggPage(packets: Array(repeating: silentFrame, count: count), headerType: isLast ? 0x04 : 0x00, granule: granule, serial: serial, sequence: sequence))
+        sequence += 1
+    }
+    return result
 }

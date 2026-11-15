@@ -125,8 +125,18 @@ let ghostPluginPrelude: String = #"""
     N.send(String(chatId), text, Number(options.replyTo) || 0);
   }
 
+  function sendVoice(chatId, wave, options) {
+    options = options || {};
+    if (chatId === undefined || chatId === null || chatId === '') throw new Error('GG.sendVoice: не указан чат');
+    if (!Array.isArray(wave) || !wave.length) throw new Error('GG.sendVoice: волна — это массив чисел 0..31');
+    var bars = wave.slice(0, 100).map(function (v) { v = Math.round(Number(v) || 0); return v < 0 ? 0 : (v > 31 ? 31 : v); });
+    var duration = Math.round(Number(options.duration) || 5);
+    N.sendVoice(String(chatId), JSON.stringify(bars), duration, Number(options.replyTo) || 0);
+  }
+
   function wrapMessage(message) {
     message.reply = function (text) { send(message.chatId, text, { replyTo: message.id }); };
+    message.voice = function (wave, options) { sendVoice(message.chatId, wave, Object.assign({ replyTo: message.replyTo }, options || {})); };
     message.respond = function (text) { send(message.chatId, text); };
     return message;
   }
@@ -196,6 +206,7 @@ let ghostPluginPrelude: String = #"""
       N.storageSet('setting:' + key, JSON.stringify(value));
     },
     send: send,
+    sendVoice: sendVoice,
     notify: function (title, body, options) {
       options = options || {};
       N.notify(str(title), body === undefined ? '' : str(body), Number(options.delay) || 0, options.id ? String(options.id) : '');

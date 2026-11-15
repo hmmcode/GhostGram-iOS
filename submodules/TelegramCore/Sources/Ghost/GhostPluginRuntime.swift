@@ -100,6 +100,8 @@ public final class GhostPlugins {
 
     /// Sends a text message: chat id (PeerId.toInt64 as a string), text, message id to reply to (0 for none).
     public var sendMessage: ((String, String, Int32) -> Void)?
+    /// Sends a silent voice message with a drawn waveform: chat id, bar heights 0...31, duration in seconds, reply id.
+    public var sendVoice: ((String, [Int], Int, Int32) -> Void)?
     /// Shows alerts, toasts and banners. Called on the plugin queue.
     public var uiHandler: ((GhostPluginUIRequest) -> Void)?
     /// Looks up recent .js files in Saved Messages and returns (file name, contents).
@@ -860,6 +862,31 @@ public final class GhostPlugins {
             }
         }
         define("send", unsafeBitCast(send, to: AnyObject.self))
+
+        let sendVoice: @convention(block) (JSValue, JSValue, JSValue, JSValue) -> Void = { [weak self] chatId, wave, duration, replyTo in
+            guard let self = self else {
+                return
+            }
+            let chat = chatId.toString() ?? ""
+            guard !chat.isEmpty, let data = (wave.toString() ?? "").data(using: .utf8), let raw = (try? JSONSerialization.jsonObject(with: data)) as? [Any] else {
+                self.appendLog(id, "error", "GG.sendVoice: неверная волна")
+                return
+            }
+            let bars = raw.prefix(100).map { item -> Int in
+                let value = (item as? NSNumber)?.doubleValue ?? 0
+                return max(0, min(31, Int(value.rounded())))
+            }
+            if bars.isEmpty {
+                return
+            }
+            let seconds = max(1, min(600, Int(duration.toInt32())))
+            if let sendVoice = self.sendVoice {
+                sendVoice(chat, bars, seconds, replyTo.toInt32())
+            } else {
+                self.appendLog(id, "error", "Отправка пока недоступна: аккаунт ещё не загрузился")
+            }
+        }
+        define("sendVoice", unsafeBitCast(sendVoice, to: AnyObject.self))
 
         let notify: @convention(block) (JSValue, JSValue, JSValue, JSValue) -> Void = { [weak self] title, body, delay, identifier in
             let titleText = title.toString() ?? ""
