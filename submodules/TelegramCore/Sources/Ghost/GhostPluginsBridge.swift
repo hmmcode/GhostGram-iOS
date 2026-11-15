@@ -110,8 +110,46 @@ private func ghostPluginPayload(_ message: Message, notify: Bool, accountPeerId:
         "out": !message.flags.contains(.Incoming),
         "muted": !notify,
         "replyTo": replyTo,
-        "media": ghostPluginMediaType(message)
+        "media": ghostPluginMediaType(message),
+        "account": "\(accountPeerId.toInt64())"
     ]
+}
+
+private final class GhostWeakAccount {
+    weak var account: Account?
+    init(_ account: Account) {
+        self.account = account
+    }
+}
+
+private var ghostPluginRegisteredAccounts: [GhostWeakAccount] = []
+private var ghostPluginActiveAccountKey = ""
+private var ghostPluginBridgeWired = false
+
+/// Remembers which account the user is writing from, so plugin actions without a message go there.
+private func ghostPluginSetActiveAccount(_ accountPeerId: PeerId) {
+    ghostPluginBridgeLock.lock()
+    ghostPluginActiveAccountKey = "\(accountPeerId.toInt64())"
+    ghostPluginBridgeLock.unlock()
+}
+
+/// The account a plugin action belongs to: the one named by the key, else the one in use, else any.
+private func ghostPluginAccount(_ key: String) -> Account? {
+    ghostPluginBridgeLock.lock()
+    defer {
+        ghostPluginBridgeLock.unlock()
+    }
+    ghostPluginRegisteredAccounts.removeAll(where: { $0.account == nil })
+    let accounts = ghostPluginRegisteredAccounts.compactMap { $0.account }
+    let wanted = key.isEmpty ? ghostPluginActiveAccountKey : key
+    if let match = accounts.first(where: { "\($0.peerId.toInt64())" == wanted }) {
+        return match
+    }
+    if !key.isEmpty {
+        // A message from an account that is gone: never send from a different one.
+        return nil
+    }
+    return accounts.first
 }
 
 /// Runs plugin hooks on text messages the user sends. `nil` means a plugin cancelled the message.
@@ -124,7 +162,9 @@ func ghostPluginsTransformOutgoing(accountPeerId: PeerId, peerId: PeerId, messag
         ghostPluginBridgeLock.lock()
         let title = ghostPluginChatTitles[peerId.toInt64()] ?? ""
         ghostPluginBridgeLock.unlock()
+        ghostPluginSetActiveAccount(accountPeerId)
         let decision = plugins.transformOutgoing(
+            account: "\(accountPeerId.toInt64())",
             chatId: "\(peerId.toInt64())",
             chatType: ghostPluginChatType(peerId, accountPeerId: accountPeerId),
             chatTitle: title,
@@ -177,13 +217,58 @@ public func ghostPluginsAttach(account: Account) {
         return
     }
     ghostPluginBridgeAccounts.append(account.id)
+    ghostPluginRegisteredAccounts.append(GhostWeakAccount(account))
+    if ghostPluginActiveAccountKey.isEmpty {
+        ghostPluginActiveAccountKey = "\(account.peerId.toInt64())"
+    }
     ghostPluginBridgeLock.unlock()
 
     let plugins = GhostPlugins.shared
     let accountPeerId = account.peerId
 
-    plugins.sendMessage = { [weak account] chatId, text, replyTo in
-        guard let account = account, let rawId = Int64(chatId) else {
+    let _ = (account.postbox.transaction { transaction -> [String: Any] in
+        guard let user = transaction.getPeer(accountPeerId) as? TelegramUser else {
+            return [:]
+        }
+        return [
+            "id": "\(accountPeerId.id._internalGetInt64Value())",
+            "chatId": "\(accountPeerId.toInt64())",
+            "name": ghostPluginUserName(user),
+            "username": user.username ?? ""
+        ]
+    }).start(next: { info in
+        if !info.isEmpty {
+            GhostPlugins.shared.setMe(info)
+        }
+    })
+
+    let disposable = account.stateManager.notificationMessages.start(next: { list in
+        if !GhostPlugins.shared.hasRunningPlugins {
+            return
+        }
+        for (messages, _, notify, _) in list {
+            for message in messages {
+                GhostPlugins.shared.dispatchIncoming(ghostPluginPayload(message, notify: notify, accountPeerId: accountPeerId))
+            }
+        }
+    })
+    ghostPluginBridgeLock.lock()
+    ghostPluginBridgeDisposables.append(disposable)
+    ghostPluginBridgeLock.unlock()
+
+    ghostPluginBridgeLock.lock()
+    let alreadyWired = ghostPluginBridgeWired
+    ghostPluginBridgeWired = true
+    ghostPluginBridgeLock.unlock()
+
+
+    if alreadyWired {
+        plugins.start()
+        return
+    }
+
+    plugins.sendMessage = { accountKey, chatId, text, replyTo in
+        guard let account = ghostPluginAccount(accountKey), let rawId = Int64(chatId) else {
             return
         }
         let peerId = PeerId(rawId)
@@ -194,8 +279,8 @@ public func ghostPluginsAttach(account: Account) {
         let _ = enqueueMessages(account: account, peerId: peerId, messages: [.message(text: text, attributes: [], inlineStickers: [:], mediaReference: nil, threadId: nil, replyToMessageId: reply, replyToStoryId: nil, localGroupingKey: nil, correlationId: nil, bubbleUpEmojiOrStickersets: [])]).start()
     }
 
-    plugins.sendVoice = { [weak account] chatId, bars, seconds, replyTo in
-        guard let account = account, let rawId = Int64(chatId) else {
+    plugins.sendVoice = { accountKey, chatId, bars, seconds, replyTo in
+        guard let account = ghostPluginAccount(accountKey), let rawId = Int64(chatId) else {
             return
         }
         let peerId = PeerId(rawId)
@@ -211,8 +296,8 @@ public func ghostPluginsAttach(account: Account) {
         let _ = enqueueMessages(account: account, peerId: peerId, messages: [.message(text: "", attributes: [], inlineStickers: [:], mediaReference: .standalone(media: file), threadId: nil, replyToMessageId: reply, replyToStoryId: nil, localGroupingKey: nil, correlationId: nil, bubbleUpEmojiOrStickersets: [])]).start()
     }
 
-    plugins.sendRoundVideo = { [weak account] chatId, video, thumbnail, duration, side, replyTo in
-        guard let account = account, let rawId = Int64(chatId) else {
+    plugins.sendRoundVideo = { accountKey, chatId, video, thumbnail, duration, side, replyTo in
+        guard let account = ghostPluginAccount(accountKey), let rawId = Int64(chatId) else {
             return
         }
         let peerId = PeerId(rawId)
@@ -232,8 +317,8 @@ public func ghostPluginsAttach(account: Account) {
         let _ = enqueueMessages(account: account, peerId: peerId, messages: [.message(text: "", attributes: [], inlineStickers: [:], mediaReference: .standalone(media: file), threadId: nil, replyToMessageId: reply, replyToStoryId: nil, localGroupingKey: nil, correlationId: nil, bubbleUpEmojiOrStickersets: [])]).start()
     }
 
-    plugins.savedMessagesFiles = { [weak account] completion in
-        guard let account = account else {
+    plugins.savedMessagesFiles = { completion in
+        guard let account = ghostPluginAccount("") else {
             completion([])
             return
         }
@@ -273,35 +358,6 @@ public func ghostPluginsAttach(account: Account) {
         })
     }
 
-    let _ = (account.postbox.transaction { transaction -> [String: Any] in
-        guard let user = transaction.getPeer(accountPeerId) as? TelegramUser else {
-            return [:]
-        }
-        return [
-            "id": "\(accountPeerId.id._internalGetInt64Value())",
-            "chatId": "\(accountPeerId.toInt64())",
-            "name": ghostPluginUserName(user),
-            "username": user.username ?? ""
-        ]
-    }).start(next: { info in
-        if !info.isEmpty {
-            GhostPlugins.shared.setMe(info)
-        }
-    })
-
-    let disposable = account.stateManager.notificationMessages.start(next: { list in
-        if !GhostPlugins.shared.hasRunningPlugins {
-            return
-        }
-        for (messages, _, notify, _) in list {
-            for message in messages {
-                GhostPlugins.shared.dispatchIncoming(ghostPluginPayload(message, notify: notify, accountPeerId: accountPeerId))
-            }
-        }
-    })
-    ghostPluginBridgeLock.lock()
-    ghostPluginBridgeDisposables.append(disposable)
-    ghostPluginBridgeLock.unlock()
 
     plugins.start()
 }

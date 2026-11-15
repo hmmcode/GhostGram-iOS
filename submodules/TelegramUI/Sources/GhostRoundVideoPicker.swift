@@ -8,12 +8,14 @@ import TelegramCore
 final class GhostRoundVideoPicker: NSObject, PHPickerViewControllerDelegate {
     private static var current: GhostRoundVideoPicker?
 
+    private let account: String
     private let chatId: String
     private let replyTo: Int32
     private let seconds: Int
     private let toast: (String) -> Void
 
-    private init(chatId: String, replyTo: Int32, seconds: Int, toast: @escaping (String) -> Void) {
+    private init(account: String, chatId: String, replyTo: Int32, seconds: Int, toast: @escaping (String) -> Void) {
+        self.account = account
         self.chatId = chatId
         self.replyTo = replyTo
         self.seconds = seconds
@@ -21,7 +23,7 @@ final class GhostRoundVideoPicker: NSObject, PHPickerViewControllerDelegate {
         super.init()
     }
 
-    static func present(from controller: UIViewController?, chatId: String, replyTo: Int32, seconds: Int, toast: @escaping (String) -> Void) {
+    static func present(from controller: UIViewController?, account: String, chatId: String, replyTo: Int32, seconds: Int, toast: @escaping (String) -> Void) {
         guard let controller = controller else {
             toast("⚠️ Не получилось открыть галерею")
             return
@@ -31,7 +33,7 @@ final class GhostRoundVideoPicker: NSObject, PHPickerViewControllerDelegate {
         configuration.filter = .any(of: [.videos, .images])
         configuration.preferredAssetRepresentationMode = .current
         let picker = PHPickerViewController(configuration: configuration)
-        let handler = GhostRoundVideoPicker(chatId: chatId, replyTo: replyTo, seconds: seconds, toast: toast)
+        let handler = GhostRoundVideoPicker(account: account, chatId: chatId, replyTo: replyTo, seconds: seconds, toast: toast)
         current = handler
         picker.delegate = handler
         controller.present(picker, animated: true, completion: nil)
@@ -108,7 +110,7 @@ final class GhostRoundVideoPicker: NSObject, PHPickerViewControllerDelegate {
                 return
             }
             let thumbnail = made.thumbnail.flatMap { GhostRoundVideoMaker.jpeg($0) }
-            GhostPlugins.shared.sendRoundVideo?(chatId, data, thumbnail, made.duration, GhostRoundVideoMaker.side, replyTo)
+            GhostPlugins.shared.sendRoundVideo?(account, chatId, data, thumbnail, made.duration, GhostRoundVideoMaker.side, replyTo)
             DispatchQueue.main.async {
                 self.toast("🔵 Кружок отправлен")
             }

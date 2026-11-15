@@ -41,8 +41,8 @@ enum GhostPluginUI {
                 content.threadIdentifier = "ghostgram-plugins"
                 UNUserNotificationCenter.current().add(UNNotificationRequest(identifier: identifier, content: content, trigger: nil), withCompletionHandler: nil)
             }
-        case let .pickRoundVideo(chatId, replyTo, seconds):
-            GhostRoundVideoPicker.present(from: topController(), chatId: chatId, replyTo: replyTo, seconds: seconds, toast: { showToast($0) })
+        case let .pickRoundVideo(account, chatId, replyTo, seconds):
+            GhostRoundVideoPicker.present(from: topController(), account: account, chatId: chatId, replyTo: replyTo, seconds: seconds, toast: { showToast($0) })
         }
     }
 

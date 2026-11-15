@@ -122,7 +122,7 @@ let ghostPluginPrelude: String = #"""
     if (chatId === undefined || chatId === null || chatId === '') throw new Error('GG.send: не указан чат');
     text = str(text);
     if (!text) return;
-    N.send(String(chatId), text, Number(options.replyTo) || 0);
+    N.send(String(chatId), text, Number(options.replyTo) || 0, options.account ? String(options.account) : '');
   }
 
   function sendVoice(chatId, wave, options) {
@@ -132,21 +132,21 @@ let ghostPluginPrelude: String = #"""
     if (!Array.isArray(wave) || !wave.length) throw new Error('GG.sendVoice: волна — это массив чисел 0..31');
     var bars = wave.slice(0, 100).map(function (v) { v = Math.round(Number(v) || 0); return v < 0 ? 0 : (v > 31 ? 31 : v); });
     var duration = Math.round(Number(options.duration) || 5);
-    N.sendVoice(String(chatId), JSON.stringify(bars), duration, Number(options.replyTo) || 0);
+    N.sendVoice(String(chatId), JSON.stringify(bars), duration, Number(options.replyTo) || 0, options.account ? String(options.account) : '');
   }
 
   function pickRound(chatId, options) {
     options = options || {};
     if (chatId === undefined || chatId === null || chatId === '') throw new Error('GG.pickRound: не указан чат');
     if (typeof N.pickRound !== 'function') throw new Error('Кружки работают с GhostGram v12');
-    N.pickRound(String(chatId), Number(options.replyTo) || 0, Math.round(Number(options.seconds) || 5));
+    N.pickRound(String(chatId), Number(options.replyTo) || 0, Math.round(Number(options.seconds) || 5), options.account ? String(options.account) : '');
   }
 
   function wrapMessage(message) {
-    message.reply = function (text) { send(message.chatId, text, { replyTo: message.id }); };
-    message.round = function (options) { pickRound(message.chatId, Object.assign({ replyTo: message.replyTo }, options || {})); };
-    message.voice = function (wave, options) { sendVoice(message.chatId, wave, Object.assign({ replyTo: message.replyTo }, options || {})); };
-    message.respond = function (text) { send(message.chatId, text); };
+    message.reply = function (text) { send(message.chatId, text, { replyTo: message.id, account: message.account }); };
+    message.round = function (options) { pickRound(message.chatId, Object.assign({ replyTo: message.replyTo, account: message.account }, options || {})); };
+    message.voice = function (wave, options) { sendVoice(message.chatId, wave, Object.assign({ replyTo: message.replyTo, account: message.account }, options || {})); };
+    message.respond = function (text) { send(message.chatId, text, { account: message.account }); };
     return message;
   }
 
@@ -240,7 +240,7 @@ let ghostPluginPrelude: String = #"""
   function settle(result, message, isCommand) {
     if (isThenable(result)) {
       result.then(function (value) {
-        if (typeof value === 'string' && value) send(message.chatId, value, { replyTo: message.replyTo });
+        if (typeof value === 'string' && value) send(message.chatId, value, { replyTo: message.replyTo, account: message.account });
       }, function (e) {
         report('команда', e);
         GG.toast('⚠️ ' + (e && e.message ? e.message : str(e)));

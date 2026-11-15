@@ -51,7 +51,7 @@ public enum GhostPluginUIRequest {
     case copy(String)
     case notify(title: String, text: String, identifier: String)
     /// Opens the gallery and sends the chosen video, GIF or picture as a round video message.
-    case pickRoundVideo(chatId: String, replyTo: Int32, seconds: Int)
+    case pickRoundVideo(account: String, chatId: String, replyTo: Int32, seconds: Int)
 }
 
 /// What should happen to a message the user is sending.
@@ -101,11 +101,12 @@ public final class GhostPlugins {
     public static let catalogURL = "https://raw.githubusercontent.com/hmmcode/GhostGram-iOS/master/plugins/index.json"
 
     /// Sends a text message: chat id (PeerId.toInt64 as a string), text, message id to reply to (0 for none).
-    public var sendMessage: ((String, String, Int32) -> Void)?
+    /// Every sender gets the account key first (the account's own PeerId.toInt64 as a string, empty = the account in use).
+    public var sendMessage: ((String, String, String, Int32) -> Void)?
     /// Sends a silent voice message with a drawn waveform: chat id, bar heights 0...31, duration in seconds, reply id.
-    public var sendVoice: ((String, [Int], Int, Int32) -> Void)?
+    public var sendVoice: ((String, String, [Int], Int, Int32) -> Void)?
     /// Sends a square mp4 as a round video message: chat id, mp4 bytes, JPEG preview, duration, side in pixels, reply id.
-    public var sendRoundVideo: ((String, Data, Data?, Double, Int, Int32) -> Void)?
+    public var sendRoundVideo: ((String, String, Data, Data?, Double, Int, Int32) -> Void)?
     /// Shows alerts, toasts and banners. Called on the plugin queue.
     public var uiHandler: ((GhostPluginUIRequest) -> Void)?
     /// Looks up recent .js files in Saved Messages and returns (file name, contents).
@@ -216,6 +217,14 @@ public final class GhostPlugins {
             }
             self.postChanged()
         }
+    }
+
+    /// Reads the optional account argument a plugin passed; missing values mean "the account in use".
+    static func accountKey(_ value: JSValue) -> String {
+        if value.isUndefined || value.isNull {
+            return ""
+        }
+        return value.toString() ?? ""
     }
 
     public func setMe(_ info: [String: Any]) {
@@ -658,7 +667,7 @@ public final class GhostPlugins {
 
     /// Runs the plugins' outgoing hooks and commands for a text message the user is sending.
     /// Waits at most 0.8 s; returns `.keep` when plugins are slow or a plugin itself is sending.
-    public func transformOutgoing(chatId: String, chatType: String, chatTitle: String, text: String, replyTo: Int32) -> GhostOutgoingDecision {
+    public func transformOutgoing(account: String, chatId: String, chatType: String, chatTitle: String, text: String, replyTo: Int32) -> GhostOutgoingDecision {
         let lowered = text.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         let isHelp = lowered == ".plugins" || lowered == ".плагины"
         if !self.hasRunningPlugins && !isHelp {
@@ -675,7 +684,7 @@ public final class GhostPlugins {
         let box = GhostDecisionBox()
         let semaphore = DispatchSemaphore(value: 0)
         self.queue.async {
-            box.value = self.runOutgoing(chatId: chatId, chatType: chatType, chatTitle: chatTitle, text: text, replyTo: replyTo)
+            box.value = self.runOutgoing(account: account, chatId: chatId, chatType: chatType, chatTitle: chatTitle, text: text, replyTo: replyTo)
             semaphore.signal()
         }
         if semaphore.wait(timeout: .now() + 0.8) == .timedOut {
@@ -684,7 +693,7 @@ public final class GhostPlugins {
         return box.value
     }
 
-    private func runOutgoing(chatId: String, chatType: String, chatTitle: String, text: String, replyTo: Int32) -> GhostOutgoingDecision {
+    private func runOutgoing(account: String, chatId: String, chatType: String, chatTitle: String, text: String, replyTo: Int32) -> GhostOutgoingDecision {
         var current = text
         var changed = false
         for id in self.order {
@@ -692,6 +701,7 @@ public final class GhostPlugins {
                 continue
             }
             let payload: [String: Any] = [
+                "account": account,
                 "chatId": chatId,
                 "chatType": chatType,
                 "chatTitle": chatTitle,
@@ -850,7 +860,7 @@ public final class GhostPlugins {
         }
         define("clearTimer", unsafeBitCast(clearTimer, to: AnyObject.self))
 
-        let send: @convention(block) (JSValue, JSValue, JSValue) -> Void = { [weak self] chatId, text, replyTo in
+        let send: @convention(block) (JSValue, JSValue, JSValue, JSValue) -> Void = { [weak self] chatId, text, replyTo, account in
             guard let self = self else {
                 return
             }
@@ -860,14 +870,14 @@ public final class GhostPlugins {
                 return
             }
             if let sendMessage = self.sendMessage {
-                sendMessage(chat, body, replyTo.toInt32())
+                sendMessage(GhostPlugins.accountKey(account), chat, body, replyTo.toInt32())
             } else {
                 self.appendLog(id, "error", "Отправка пока недоступна: аккаунт ещё не загрузился")
             }
         }
         define("send", unsafeBitCast(send, to: AnyObject.self))
 
-        let sendVoice: @convention(block) (JSValue, JSValue, JSValue, JSValue) -> Void = { [weak self] chatId, wave, duration, replyTo in
+        let sendVoice: @convention(block) (JSValue, JSValue, JSValue, JSValue, JSValue) -> Void = { [weak self] chatId, wave, duration, replyTo, account in
             guard let self = self else {
                 return
             }
@@ -885,14 +895,14 @@ public final class GhostPlugins {
             }
             let seconds = max(1, min(600, Int(duration.toInt32())))
             if let sendVoice = self.sendVoice {
-                sendVoice(chat, bars, seconds, replyTo.toInt32())
+                sendVoice(GhostPlugins.accountKey(account), chat, bars, seconds, replyTo.toInt32())
             } else {
                 self.appendLog(id, "error", "Отправка пока недоступна: аккаунт ещё не загрузился")
             }
         }
         define("sendVoice", unsafeBitCast(sendVoice, to: AnyObject.self))
 
-        let pickRound: @convention(block) (JSValue, JSValue, JSValue) -> Void = { [weak self] chatId, replyTo, seconds in
+        let pickRound: @convention(block) (JSValue, JSValue, JSValue, JSValue) -> Void = { [weak self] chatId, replyTo, seconds, account in
             guard let self = self else {
                 return
             }
@@ -904,7 +914,7 @@ public final class GhostPlugins {
                 self.appendLog(id, "error", "Кружки пока недоступны: аккаунт ещё не загрузился")
                 return
             }
-            handler(.pickRoundVideo(chatId: chat, replyTo: replyTo.toInt32(), seconds: max(1, min(60, Int(seconds.toInt32())))))
+            handler(.pickRoundVideo(account: GhostPlugins.accountKey(account), chatId: chat, replyTo: replyTo.toInt32(), seconds: max(1, min(60, Int(seconds.toInt32())))))
         }
         define("pickRound", unsafeBitCast(pickRound, to: AnyObject.self))
 
