@@ -204,7 +204,7 @@ func ghostDetachStickersIfNeeded(account: Account, messages: [EnqueueMessage]) -
         return messages
     }
     return messages.map { message -> EnqueueMessage in
-        guard case let .message(text, attributes, inlineStickers, mediaReference, threadId, replyToMessageId, replyToStoryId, localGroupingKey, correlationId, bubbleUpEmojiOrStickersets) = message, let file = mediaReference?.media as? TelegramMediaFile, file.isSticker, let detached = ghostDetachedSticker(account: account, file: file) else {
+        guard case let .message(text, attributes, inlineStickers, mediaReference, threadId, replyToMessageId, replyToStoryId, localGroupingKey, correlationId, _) = message, let file = mediaReference?.media as? TelegramMediaFile, file.isSticker, let detached = ghostDetachedSticker(account: account, file: file) else {
             return message
         }
         return .message(text: text, attributes: attributes, inlineStickers: inlineStickers, mediaReference: .standalone(media: detached), threadId: threadId, replyToMessageId: replyToMessageId, replyToStoryId: replyToStoryId, localGroupingKey: localGroupingKey, correlationId: correlationId, bubbleUpEmojiOrStickersets: [])
