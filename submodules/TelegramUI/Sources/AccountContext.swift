@@ -316,6 +316,8 @@ public final class AccountContextImpl: AccountContext {
             ghostSyncNameMarker(account: account)
             GhostPluginUI.install()
             ghostPluginsAttach(account: account)
+            ghostAutomationsAttach(account: account)
+            GhostUploadActivityController.shared.attach(account: account)
         }
         self.engine = TelegramEngine(account: account)
         

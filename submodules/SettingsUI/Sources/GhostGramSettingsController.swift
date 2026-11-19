@@ -69,6 +69,8 @@ private enum GhostToggle: Int32 {
     case hiddenChats
     case panicShake
     case protectMenu
+    case uploadIsland
+    case stickersWithoutPack
 
     var title: String {
         switch self {
@@ -122,6 +124,8 @@ private enum GhostToggle: Int32 {
         case .hiddenChats: return "Скрытые чаты"
         case .panicShake: return "Встряхнуть — выйти (паника)"
         case .protectMenu: return "Face ID на меню GhostGram"
+        case .uploadIsland: return "Отправка в Dynamic Island"
+        case .stickersWithoutPack: return "Стикеры без стикерпака"
         }
     }
 
@@ -177,7 +181,68 @@ private enum GhostToggle: Int32 {
         case .hiddenChats: return GhostSettings.hiddenChatsEnabled
         case .panicShake: return GhostSettings.panicShake
         case .protectMenu: return GhostSettings.protectMenu
+        case .uploadIsland: return GhostSettings.uploadIsland
+        case .stickersWithoutPack: return GhostSettings.stickersWithoutPack
         }
+    }
+
+    var icon: UIImage? {
+        let pair: (String, UIColor)
+        switch self {
+        case .hideRead: pair = ("checkmark.circle", .systemBlue)
+        case .readOnReply: pair = ("arrowshape.turn.up.left.fill", .systemTeal)
+        case .hideStoryViews: pair = ("circle.dashed", .systemPink)
+        case .hideOnline: pair = ("wifi.slash", .systemGreen)
+        case .hideTyping: pair = ("ellipsis.bubble.fill", .systemIndigo)
+        case .hideOtherActivities: pair = ("mic.slash.fill", .systemOrange)
+        case .schedule: pair = ("moon.stars.fill", .systemPurple)
+        case .fakeActivities: pair = ("theatermasks.fill", .systemPink)
+        case .keepDeleted: pair = ("trash.slash.fill", .systemRed)
+        case .keepEditHistory: pair = ("pencil.and.outline", .systemOrange)
+        case .keepViewOnce: pair = ("flame.fill", .systemOrange)
+        case .keepSecret: pair = ("lock.doc.fill", .systemGreen)
+        case .notifyOnDelete: pair = ("bell.badge.fill", .systemRed)
+        case .deletedLog: pair = ("list.bullet.rectangle.fill", .systemGray)
+        case .filter: pair = ("line.3.horizontal.decrease.circle.fill", .systemIndigo)
+        case .autoCache: pair = ("tray.and.arrow.down.fill", .systemBlue)
+        case .autoCachePhotos: pair = ("photo.fill", .systemBlue)
+        case .autoCacheVideos: pair = ("video.fill", .systemPurple)
+        case .autoCacheVoice: pair = ("waveform", .systemOrange)
+        case .autoCacheFiles: pair = ("doc.fill", .systemGray)
+        case .bypassCopyProtection: pair = ("doc.on.doc.fill", .systemTeal)
+        case .hideScreenshots: pair = ("camera.viewfinder", .systemGreen)
+        case .hideSponsored: pair = ("megaphone.fill", .systemRed)
+        case .hideStories: pair = ("rectangle.stack.fill", .systemPink)
+        case .profileId: pair = ("number", .systemBlue)
+        case .profileLog: pair = ("person.text.rectangle.fill", .systemIndigo)
+        case .hidePhone: pair = ("phone.down.fill", .systemGreen)
+        case .confirmVoice: pair = ("mic.fill", .systemOrange)
+        case .confirmStickers: pair = ("face.smiling.inverse", .systemYellow)
+        case .confirmCalls: pair = ("phone.fill", .systemGreen)
+        case .extendedSpeeds: pair = ("speedometer", .systemRed)
+        case .messageDetails: pair = ("info.circle.fill", .systemBlue)
+        case .notes: pair = ("note.text", .systemYellow)
+        case .seconds: pair = ("clock.fill", .systemGray)
+        case .doubleTapReply: pair = ("hand.tap.fill", .systemTeal)
+        case .noSwipeReply: pair = ("hand.draw.fill", .systemGray)
+        case .noHaptics: pair = ("iphone.radiowaves.left.and.right", .systemGray)
+        case .hideNewsTab: pair = ("newspaper.fill", .systemOrange)
+        case .hideBadge: pair = ("app.badge.fill", .systemRed)
+        case .dynamicIsland: pair = ("capsule.fill", .black)
+        case .islandBadge: pair = ("tag.fill", .systemPurple)
+        case .minimalTabs: pair = ("dock.rectangle", .systemBlue)
+        case .hideOnCapture: pair = ("record.circle", .systemRed)
+        case .downloadBoost: pair = ("bolt.fill", .systemYellow)
+        case .glassProfile: pair = ("sparkles", .systemCyan)
+        case .advertiseBadge: pair = ("person.badge.plus", .systemPurple)
+        case .showBadges: pair = ("eye.fill", .systemPurple)
+        case .hiddenChats: pair = ("eye.slash.fill", .systemGray)
+        case .panicShake: pair = ("iphone.gen3.radiowaves.left.and.right", .systemRed)
+        case .protectMenu: pair = ("faceid", .systemGreen)
+        case .uploadIsland: pair = ("paperplane.fill", .systemBlue)
+        case .stickersWithoutPack: pair = ("shippingbox.fill", .systemOrange)
+        }
+        return ghostSettingsIcon(pair.0, pair.1)
     }
 
     func set(_ value: Bool) {
@@ -232,6 +297,8 @@ private enum GhostToggle: Int32 {
         case .hiddenChats: GhostSettings.hiddenChatsEnabled = value
         case .panicShake: GhostSettings.panicShake = value
         case .protectMenu: GhostSettings.protectMenu = value
+        case .uploadIsland: GhostSettings.uploadIsland = value
+        case .stickersWithoutPack: GhostSettings.stickersWithoutPack = value
         }
     }
 }
@@ -262,15 +329,138 @@ private enum GhostLink: Int32 {
     case exportSettings
     case importSettings
     case reset
+    case automations
+
+    var icon: UIImage? {
+        let pair: (String, UIColor)
+        switch self {
+        case .scheduleHours: pair = ("clock.fill", .systemPurple)
+        case .onlineDelay: pair = ("hourglass", .systemGreen)
+        case .exceptions: pair = ("person.crop.circle.badge.xmark", .systemGray)
+        case .fakeList: pair = ("list.bullet", .systemPink)
+        case .deletedStyle: pair = ("paintbrush.fill", .systemOrange)
+        case .deletedLog: pair = ("list.bullet.rectangle.fill", .systemRed)
+        case .deletedStats: pair = ("chart.bar.fill", .systemRed)
+        case .keywords: pair = ("textformat", .systemIndigo)
+        case .ignored: pair = ("person.fill.xmark", .systemGray)
+        case .cacheLimit: pair = ("externaldrive.fill", .systemBlue)
+        case .profileLog: pair = ("clock.arrow.circlepath", .systemIndigo)
+        case .watchList: pair = ("bell.fill", .systemGreen)
+        case .nicknames: pair = ("character.cursor.ibeam", .systemTeal)
+        case .onlineNow: pair = ("dot.radiowaves.left.and.right", .systemGreen)
+        case .chatListTitle: pair = ("textformat.size", .systemBlue)
+        case .amoled: pair = ("moon.fill", .black)
+        case .openById: pair = ("magnifyingglass", .systemBlue)
+        case .plugins: pair = ("puzzlepiece.extension.fill", .systemPurple)
+        case .hiddenChats: pair = ("eye.slash.fill", .systemGray)
+        case .lockedChats: pair = ("lock.fill", .systemGreen)
+        case .stats: pair = ("chart.pie.fill", .systemBlue)
+        case .presets: pair = ("wand.and.stars", .systemPurple)
+        case .exportSettings: pair = ("square.and.arrow.up.fill", .systemBlue)
+        case .importSettings: pair = ("square.and.arrow.down.fill", .systemGreen)
+        case .reset: pair = ("arrow.counterclockwise", .systemRed)
+        case .automations: pair = ("bolt.fill", .systemOrange)
+        }
+        return ghostSettingsIcon(pair.0, pair.1)
+    }
+}
+
+/// The sections of the GhostGram menu; the main screen lists them like iOS Settings.
+private enum GhostPage: Int32, CaseIterable {
+    case ghost
+    case fake
+    case automations
+    case messages
+    case stickers
+    case filters
+    case media
+    case content
+    case people
+    case island
+    case interface
+    case security
+    case manage
+
+    var title: String {
+        switch self {
+        case .ghost: return "Режим призрака"
+        case .fake: return "Фейковые статусы"
+        case .automations: return "Авто-действия"
+        case .messages: return "Удалённые и правки"
+        case .stickers: return "Стикеры"
+        case .filters: return "Фильтры"
+        case .media: return "Медиа и загрузки"
+        case .content: return "Контент"
+        case .people: return "Люди"
+        case .island: return "Dynamic Island"
+        case .interface: return "Интерфейс"
+        case .security: return "Безопасность"
+        case .manage: return "Управление"
+        }
+    }
+
+    var icon: UIImage? {
+        let pair: (String, UIColor)
+        switch self {
+        case .ghost: pair = ("eye.slash.fill", .systemPurple)
+        case .fake: pair = ("theatermasks.fill", .systemPink)
+        case .automations: pair = ("bolt.fill", .systemOrange)
+        case .messages: pair = ("trash.slash.fill", .systemRed)
+        case .stickers: pair = ("face.smiling.inverse", .systemYellow)
+        case .filters: pair = ("line.3.horizontal.decrease.circle.fill", .systemIndigo)
+        case .media: pair = ("arrow.down.circle.fill", .systemBlue)
+        case .content: pair = ("lock.open.fill", .systemTeal)
+        case .people: pair = ("person.2.fill", .systemGreen)
+        case .island: pair = ("capsule.fill", .black)
+        case .interface: pair = ("paintpalette.fill", .systemCyan)
+        case .security: pair = ("lock.shield.fill", .systemGreen)
+        case .manage: pair = ("gearshape.fill", .systemGray)
+        }
+        return ghostSettingsIcon(pair.0, pair.1)
+    }
+
+    /// The switches that live on this page, used to show "3 of 6".
+    var toggles: [GhostToggle] {
+        switch self {
+        case .ghost: return [.hideRead, .readOnReply, .hideStoryViews, .hideOnline, .hideTyping, .hideOtherActivities, .schedule]
+        case .fake: return [.fakeActivities]
+        case .automations: return []
+        case .messages: return [.keepDeleted, .keepEditHistory, .keepViewOnce, .keepSecret, .notifyOnDelete, .deletedLog]
+        case .stickers: return [.stickersWithoutPack, .confirmStickers]
+        case .filters: return [.filter]
+        case .media: return [.downloadBoost, .autoCache, .autoCachePhotos, .autoCacheVideos, .autoCacheVoice, .autoCacheFiles, .extendedSpeeds]
+        case .content: return [.bypassCopyProtection, .hideScreenshots, .hideSponsored, .hideStories]
+        case .people: return [.profileId, .profileLog]
+        case .island: return [.uploadIsland, .dynamicIsland, .islandBadge]
+        case .interface: return [.hidePhone, .confirmVoice, .confirmCalls, .messageDetails, .notes, .seconds, .doubleTapReply, .noSwipeReply, .noHaptics, .hideNewsTab, .hideBadge, .glassProfile, .showBadges, .advertiseBadge, .minimalTabs]
+        case .security: return [.hiddenChats, .panicShake, .hideOnCapture, .protectMenu]
+        case .manage: return []
+        }
+    }
+
+    var label: String {
+        if self == .automations {
+            let count = GhostAutomations.rules.filter { $0.enabled }.count
+            return count == 0 ? "" : "\(count) вкл"
+        }
+        let list = self.toggles
+        if list.isEmpty {
+            return ""
+        }
+        let on = list.filter { $0.value }.count
+        return on == 0 ? "выкл" : "\(on) из \(list.count)"
+    }
 }
 
 private final class GhostGramSettingsArguments {
     let toggle: (GhostToggle, Bool) -> Void
     let open: (GhostLink) -> Void
+    let openPage: (GhostPage) -> Void
 
-    init(toggle: @escaping (GhostToggle, Bool) -> Void, open: @escaping (GhostLink) -> Void) {
+    init(toggle: @escaping (GhostToggle, Bool) -> Void, open: @escaping (GhostLink) -> Void, openPage: @escaping (GhostPage) -> Void) {
         self.toggle = toggle
         self.open = open
+        self.openPage = openPage
     }
 }
 
@@ -279,17 +469,18 @@ private enum GhostGramSettingsEntry: ItemListNodeEntry {
     case toggle(id: Int32, section: Int32, option: GhostToggle, value: Bool, enabled: Bool)
     case link(id: Int32, section: Int32, link: GhostLink, title: String, label: String, destructive: Bool)
     case footer(id: Int32, section: Int32, text: String)
+    case page(id: Int32, section: Int32, page: GhostPage, label: String)
 
     var section: ItemListSectionId {
         switch self {
-        case let .header(_, section, _), let .toggle(_, section, _, _, _), let .link(_, section, _, _, _, _), let .footer(_, section, _):
+        case let .header(_, section, _), let .toggle(_, section, _, _, _), let .link(_, section, _, _, _, _), let .footer(_, section, _), let .page(_, section, _, _):
             return section
         }
     }
 
     var stableId: Int32 {
         switch self {
-        case let .header(id, _, _), let .toggle(id, _, _, _, _), let .link(id, _, _, _, _, _), let .footer(id, _, _):
+        case let .header(id, _, _), let .toggle(id, _, _, _, _), let .link(id, _, _, _, _, _), let .footer(id, _, _), let .page(id, _, _, _):
             return id
         }
     }
@@ -304,7 +495,7 @@ private enum GhostGramSettingsEntry: ItemListNodeEntry {
         case let .header(_, _, text):
             return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
         case let .toggle(_, _, option, value, enabled):
-            return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: option.title, value: value, enabled: enabled, sectionId: self.section, style: .blocks, updated: { value in
+            return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, icon: option.icon, title: option.title, value: value, enabled: enabled, sectionId: self.section, style: .blocks, updated: { value in
                 arguments.toggle(option, value)
             })
         case let .link(_, _, link, title, label, destructive):
@@ -313,8 +504,12 @@ private enum GhostGramSettingsEntry: ItemListNodeEntry {
                     arguments.open(link)
                 })
             }
-            return ItemListDisclosureItem(presentationData: presentationData, systemStyle: .glass, title: title, label: label, sectionId: self.section, style: .blocks, action: {
+            return ItemListDisclosureItem(presentationData: presentationData, systemStyle: .glass, icon: link.icon, title: title, label: label, sectionId: self.section, style: .blocks, action: {
                 arguments.open(link)
+            })
+        case let .page(_, _, page, label):
+            return ItemListDisclosureItem(presentationData: presentationData, systemStyle: .glass, icon: page.icon, title: page.title, label: label, sectionId: self.section, style: .blocks, action: {
+                arguments.openPage(page)
             })
         case let .footer(_, _, text):
             return ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: self.section)
@@ -334,7 +529,7 @@ private func hourTitle(_ hour: Int) -> String {
     return String(format: "%02d:00", hour)
 }
 
-private func ghostGramSettingsEntries() -> [GhostGramSettingsEntry] {
+private func ghostGramSettingsEntries(page: GhostPage?) -> [GhostGramSettingsEntry] {
     var entries: [GhostGramSettingsEntry] = []
     var id: Int32 = 0
     func next() -> Int32 {
@@ -353,116 +548,173 @@ private func ghostGramSettingsEntries() -> [GhostGramSettingsEntry] {
     func footer(_ section: Int32, _ text: String) {
         entries.append(.footer(id: next(), section: section, text: text))
     }
+    func pageLink(_ section: Int32, _ target: GhostPage) {
+        entries.append(.page(id: next(), section: section, page: target, label: target.label))
+    }
 
-    header(30, "🧩 ПЛАГИНЫ")
-    link(30, .plugins, "🧩 Плагины", "\(GhostPlugins.shared.installed.filter { GhostPlugins.shared.isEnabled($0.id) }.count) вкл")
-    footer(30, "Новые функции без пересборки: калькулятор, погода, автоответчик, переводчик и другие. Ставятся из каталога или файлом .js.")
+    guard let page = page else {
+        // The home screen: the most used switches, then every section like in iOS Settings.
+        header(0, "БЫСТРО")
+        toggle(0, .hideRead)
+        toggle(0, .hideOnline)
+        toggle(0, .keepDeleted)
+        footer(0, "Самое нужное — одним касанием. Остальное разложено по разделам ниже.")
 
-    header(0, "👻 РЕЖИМ ПРИЗРАКА")
-    toggle(0, .hideRead)
-    toggle(0, .readOnReply, enabled: GhostSettings.hideReadReceipts || GhostSettings.ghostScheduleEnabled)
-    toggle(0, .hideStoryViews)
-    toggle(0, .hideOnline)
-    toggle(0, .hideTyping)
-    toggle(0, .hideOtherActivities)
-    toggle(0, .schedule)
-    link(0, .scheduleHours, "Расписание", "\(hourTitle(GhostSettings.ghostScheduleFrom))–\(hourTitle(GhostSettings.ghostScheduleTo))")
-    link(0, .onlineDelay, "Не в сети после открытия", delayTitle(GhostSettings.onlineDelaySeconds))
-    link(0, .exceptions, "Исключения", "\(GhostSettings.ghostExceptions.count)")
-    footer(0, "Собеседник не увидит, что вы прочитали сообщение, прослушали голосовое или посмотрели историю. По расписанию призрак включается сам. В исключениях он не действует.")
+        header(1, "ПРИВАТНОСТЬ")
+        pageLink(1, .ghost)
+        pageLink(1, .fake)
+        pageLink(1, .messages)
+        pageLink(1, .security)
 
-    header(1, "🎭 ФЕЙКОВЫЕ СТАТУСЫ")
-    toggle(1, .fakeActivities)
-    link(1, .fakeList, "Чаты со статусом", "\(GhostSettings.fakeActivities.count)")
-    footer(1, "В выбранном чате постоянно висит «печатает…», «записывает голосовое», «играет в игру» и т. п. Включается долгим нажатием на чат → «👻 GhostGram…».")
+        header(2, "ВОЗМОЖНОСТИ")
+        pageLink(2, .automations)
+        link(2, .plugins, "Плагины", "\(GhostPlugins.shared.installed.filter { GhostPlugins.shared.isEnabled($0.id) }.count) вкл")
+        pageLink(2, .stickers)
+        pageLink(2, .island)
+        pageLink(2, .media)
 
-    header(2, "🗑 СООБЩЕНИЯ")
-    toggle(2, .keepDeleted)
-    toggle(2, .keepEditHistory)
-    toggle(2, .keepViewOnce)
-    toggle(2, .keepSecret)
-    toggle(2, .notifyOnDelete, enabled: GhostSettings.keepDeletedMessages)
-    toggle(2, .deletedLog, enabled: GhostSettings.keepDeletedMessages)
-    link(2, .deletedStyle, "Пометка удалённых", GhostSettings.deletedMarkStyle == 1 ? "удалено" : "🗑")
-    link(2, .deletedLog, "Журнал удалённых", "\(GhostDeletedLog.entries().count)")
-    link(2, .deletedStats, "Кто сколько удалил")
-    footer(2, "Старые версии правок — в меню сообщения → «История правок». Сохраняется только то, что успело прийти на телефон.")
+        header(3, "ВНЕШНИЙ ВИД И ЛЮДИ")
+        pageLink(3, .interface)
+        pageLink(3, .content)
+        pageLink(3, .filters)
+        pageLink(3, .people)
 
-    header(3, "🚫 ФИЛЬТРЫ")
-    toggle(3, .filter)
-    link(3, .keywords, "Скрывать слова", "\(GhostSettings.filterKeywords.count)")
-    link(3, .ignored, "Игнор-лист", "\(GhostSettings.ignoredUsers.count)")
-    footer(3, "Сообщения с этими словами и от людей из игнор-листа не показываются. Добавить в игнор — меню сообщения → «Игнорировать автора».")
+        header(4, "ЕЩЁ")
+        link(4, .stats, "Моя статистика")
+        pageLink(4, .manage)
+        footer(4, "Действия для отдельного чата — долгое нажатие на чат → «👻 GhostGram…». Для сообщения — долгое нажатие на сообщение.")
+        return entries
+    }
 
-    header(4, "📥 МЕДИА")
-    toggle(4, .downloadBoost)
-    toggle(4, .autoCache)
-    let cacheOn = GhostSettings.autoCachePrivateMedia
-    toggle(4, .autoCachePhotos, enabled: cacheOn)
-    toggle(4, .autoCacheVideos, enabled: cacheOn)
-    toggle(4, .autoCacheVoice, enabled: cacheOn)
-    toggle(4, .autoCacheFiles, enabled: cacheOn)
-    link(4, .cacheLimit, "Максимальный размер", cacheLimitTitle(GhostSettings.autoCacheLimitMB))
-    footer(4, "Медиа из личных чатов скачивается сразу, поэтому остаётся у вас, даже если собеседник его удалит.")
-
-    header(5, "🔓 КОНТЕНТ")
-    toggle(5, .bypassCopyProtection)
-    toggle(5, .hideScreenshots)
-    toggle(5, .hideSponsored)
-    toggle(5, .hideStories)
-    footer(5, "Обход запрета позволяет сохранять и копировать из защищённых чатов и каналов. Пересылку оттуда сервер всё равно не пропустит.")
-
-    header(6, "👤 ЛЮДИ")
-    toggle(6, .profileId)
-    toggle(6, .profileLog)
-    link(6, .profileLog, "Журнал изменений профилей", "\(GhostProfileLog.entries().count)")
-    link(6, .watchList, "Сообщать, когда в сети", "\(GhostSettings.onlineWatchList.count)")
-    link(6, .nicknames, "Локальные имена", "\(GhostSettings.nicknames.count)")
-    link(6, .onlineNow, "Кто сейчас в сети")
-    link(6, .openById, "🔎 Открыть профиль по ID")
-    footer(6, "Дата регистрации примерная — оценивается по ID. Локальные имена видите только вы.")
-
-    header(7, "✨ ИНТЕРФЕЙС")
-    toggle(7, .hidePhone)
-    toggle(7, .confirmVoice)
-    toggle(7, .confirmStickers)
-    toggle(7, .confirmCalls)
-    toggle(7, .extendedSpeeds)
-    toggle(7, .messageDetails)
-    toggle(7, .notes)
-    toggle(7, .seconds)
-    toggle(7, .doubleTapReply)
-    toggle(7, .noSwipeReply)
-    toggle(7, .noHaptics)
-    toggle(7, .hideNewsTab)
-    toggle(7, .hideBadge)
-    toggle(7, .dynamicIsland)
-    toggle(7, .islandBadge)
-    toggle(7, .glassProfile)
-    toggle(7, .showBadges)
-    toggle(7, .advertiseBadge)
-    toggle(7, .minimalTabs)
-    link(7, .amoled, "🖤 Включить AMOLED-тему")
-    link(7, .chatListTitle, "Заголовок списка чатов", GhostSettings.customChatListTitle ?? "Чаты")
-    footer(7, "Часть изменений интерфейса применяется после перезапуска приложения.")
-
-    header(8, "🔒 БЕЗОПАСНОСТЬ")
-    toggle(8, .hiddenChats)
-    link(8, .hiddenChats, "Открыть скрытые чаты", "\(GhostSettings.hiddenChats.count)")
-    link(8, .lockedChats, "Чаты под Face ID", "\(GhostSettings.lockedChats.count)")
-    toggle(8, .panicShake)
-    toggle(8, .hideOnCapture)
-    toggle(8, .protectMenu)
-    footer(8, "Скрыть или закрыть чат: долгое нажатие на чат в списке. Паника: резко встряхните телефон — GhostGram свернётся, закрытые чаты снова потребуют Face ID.")
-
-    header(9, "📊 СТАТИСТИКА")
-    link(9, .stats, "Моя статистика")
-
-    header(10, "⚙️ УПРАВЛЕНИЕ")
-    link(10, .presets, "Пресеты")
-    link(10, .exportSettings, "Экспорт настроек")
-    link(10, .importSettings, "Импорт из буфера")
-    link(10, .reset, "Сбросить все настройки GhostGram", destructive: true)
+    switch page {
+    case .ghost:
+        header(0, "ЧТО СКРЫВАТЬ")
+        toggle(0, .hideRead)
+        toggle(0, .readOnReply, enabled: GhostSettings.hideReadReceipts || GhostSettings.ghostScheduleEnabled)
+        toggle(0, .hideStoryViews)
+        toggle(0, .hideOnline)
+        toggle(0, .hideTyping)
+        toggle(0, .hideOtherActivities)
+        footer(0, "Собеседник не увидит, что ты прочитал сообщение, послушал голосовое или посмотрел историю.")
+        header(1, "АВТОМАТИКА")
+        toggle(1, .schedule)
+        link(1, .scheduleHours, "Расписание", "\(hourTitle(GhostSettings.ghostScheduleFrom))–\(hourTitle(GhostSettings.ghostScheduleTo))")
+        link(1, .onlineDelay, "Не в сети после открытия", delayTitle(GhostSettings.onlineDelaySeconds))
+        link(1, .exceptions, "Исключения", "\(GhostSettings.ghostExceptions.count)")
+        footer(1, "По расписанию призрак включается сам. В чатах-исключениях он не действует.")
+    case .fake:
+        header(0, "СТАТУСЫ")
+        toggle(0, .fakeActivities)
+        link(0, .fakeList, "Чаты со статусом", "\(GhostSettings.fakeActivities.count)")
+        footer(0, "В выбранном чате постоянно висит «печатает…», «записывает голосовое», «играет в игру». Включается долгим нажатием на чат → «👻 GhostGram…».")
+    case .automations:
+        header(0, "АВТО-ДЕЙСТВИЯ")
+        link(0, .automations, "Открыть авто-действия", page.label)
+        footer(0, "Когда тебе написали в личку, тегнули в группе, ответили или написали слово — GhostGram сам поставит реакцию, кинет стикер, гифку или ответит текстом.")
+    case .messages:
+        header(0, "СОХРАНЯТЬ")
+        toggle(0, .keepDeleted)
+        toggle(0, .keepEditHistory)
+        toggle(0, .keepViewOnce)
+        toggle(0, .keepSecret)
+        header(1, "УДАЛЁННЫЕ")
+        toggle(1, .notifyOnDelete, enabled: GhostSettings.keepDeletedMessages)
+        toggle(1, .deletedLog, enabled: GhostSettings.keepDeletedMessages)
+        link(1, .deletedStyle, "Пометка удалённых", GhostSettings.deletedMarkStyle == 1 ? "удалено" : "🗑")
+        link(1, .deletedLog, "Журнал удалённых", "\(GhostDeletedLog.entries().count)")
+        link(1, .deletedStats, "Кто сколько удалил")
+        footer(1, "Старые версии правок — в меню сообщения → «История правок». Сохраняется только то, что успело прийти на телефон.")
+    case .stickers:
+        header(0, "СТИКЕРЫ")
+        toggle(0, .stickersWithoutPack)
+        toggle(0, .confirmStickers)
+        footer(0, "«Без стикерпака» — каждый твой стикер загружается заново. У собеседника он выглядит как обычный стикер, но открыть его пак и добавить себе нельзя.")
+    case .filters:
+        header(0, "ФИЛЬТРЫ")
+        toggle(0, .filter)
+        link(0, .keywords, "Скрывать слова", "\(GhostSettings.filterKeywords.count)")
+        link(0, .ignored, "Игнор-лист", "\(GhostSettings.ignoredUsers.count)")
+        footer(0, "Сообщения с этими словами и от людей из игнор-листа не показываются. Добавить в игнор — меню сообщения → «Игнорировать автора».")
+    case .media:
+        header(0, "СКОРОСТЬ")
+        toggle(0, .downloadBoost)
+        toggle(0, .extendedSpeeds)
+        header(1, "АВТОСОХРАНЕНИЕ")
+        toggle(1, .autoCache)
+        let cacheOn = GhostSettings.autoCachePrivateMedia
+        toggle(1, .autoCachePhotos, enabled: cacheOn)
+        toggle(1, .autoCacheVideos, enabled: cacheOn)
+        toggle(1, .autoCacheVoice, enabled: cacheOn)
+        toggle(1, .autoCacheFiles, enabled: cacheOn)
+        link(1, .cacheLimit, "Максимальный размер", cacheLimitTitle(GhostSettings.autoCacheLimitMB))
+        footer(1, "Медиа из личных чатов скачивается сразу, поэтому остаётся у тебя, даже если собеседник его удалит.")
+    case .content:
+        header(0, "КОНТЕНТ")
+        toggle(0, .bypassCopyProtection)
+        toggle(0, .hideScreenshots)
+        toggle(0, .hideSponsored)
+        toggle(0, .hideStories)
+        footer(0, "Обход запрета позволяет сохранять и копировать из защищённых чатов и каналов. Пересылку оттуда сервер всё равно не пропустит.")
+    case .people:
+        header(0, "ПРОФИЛИ")
+        toggle(0, .profileId)
+        toggle(0, .profileLog)
+        link(0, .profileLog, "Журнал изменений профилей", "\(GhostProfileLog.entries().count)")
+        header(1, "СЛЕЖКА И ИМЕНА")
+        link(1, .watchList, "Сообщать, когда в сети", "\(GhostSettings.onlineWatchList.count)")
+        link(1, .onlineNow, "Кто сейчас в сети")
+        link(1, .nicknames, "Локальные имена", "\(GhostSettings.nicknames.count)")
+        link(1, .openById, "Открыть профиль по ID")
+        footer(1, "Дата регистрации примерная — оценивается по ID. Локальные имена видишь только ты.")
+    case .island:
+        header(0, "ОТПРАВКА")
+        toggle(0, .uploadIsland)
+        footer(0, "Когда отправляешь фото, видео, гифку или файл и сворачиваешь GhostGram, в островке летит самолётик, видны проценты и вес в КБ. В конце — «Отправлено» и вибрация.")
+        header(1, "ПРИЗРАК")
+        toggle(1, .dynamicIsland)
+        toggle(1, .islandBadge)
+        footer(1, "👻 в островке, пока включён режим призрака. iOS показывает его и на экране блокировки — убрать там можно только вместе с островком.")
+    case .interface:
+        header(0, "ЧАТЫ")
+        toggle(0, .seconds)
+        toggle(0, .doubleTapReply)
+        toggle(0, .noSwipeReply)
+        toggle(0, .messageDetails)
+        toggle(0, .notes)
+        header(1, "ПОДТВЕРЖДЕНИЯ")
+        toggle(1, .confirmVoice)
+        toggle(1, .confirmCalls)
+        header(2, "ВИД")
+        toggle(2, .glassProfile)
+        toggle(2, .minimalTabs)
+        toggle(2, .hideNewsTab)
+        toggle(2, .hideBadge)
+        toggle(2, .hidePhone)
+        toggle(2, .noHaptics)
+        link(2, .amoled, "Включить AMOLED-тему")
+        link(2, .chatListTitle, "Заголовок списка чатов", GhostSettings.customChatListTitle ?? "Чаты")
+        header(3, "👻 ЗНАЧОК")
+        toggle(3, .showBadges)
+        toggle(3, .advertiseBadge)
+        footer(3, "Часть изменений интерфейса применяется после перезапуска приложения.")
+    case .security:
+        header(0, "ЧАТЫ")
+        toggle(0, .hiddenChats)
+        link(0, .hiddenChats, "Открыть скрытые чаты", "\(GhostSettings.hiddenChats.count)")
+        link(0, .lockedChats, "Чаты под Face ID", "\(GhostSettings.lockedChats.count)")
+        header(1, "ЗАЩИТА")
+        toggle(1, .panicShake)
+        toggle(1, .hideOnCapture)
+        toggle(1, .protectMenu)
+        footer(1, "Скрыть или закрыть чат: долгое нажатие на чат в списке. Паника: резко встряхни телефон — GhostGram свернётся, закрытые чаты снова потребуют Face ID.")
+    case .manage:
+        header(0, "НАСТРОЙКИ")
+        link(0, .presets, "Пресеты")
+        link(0, .exportSettings, "Экспорт настроек")
+        link(0, .importSettings, "Импорт из буфера")
+        header(1, "")
+        link(1, .reset, "Сбросить все настройки GhostGram", destructive: true)
+    }
     return entries
 }
 
@@ -504,6 +756,32 @@ private func ghostInform(context: AccountContext, from: ViewController?, title: 
 }
 
 public func ghostGramSettingsController(context: AccountContext) -> ViewController {
+    return ghostGramSettingsPage(context: context, page: nil)
+}
+
+/// Gives the auto actions screen the account's stickers and GIFs.
+private func ghostAutomationsMedia(context: AccountContext) -> GhostAutomationsMedia {
+    let account = context.account
+    return GhostAutomationsMedia(load: { completion in
+        let _ = (ghostPickableMedia(account: account)
+        |> deliverOnMainQueue).start(next: { result in
+            let stickers = result.stickers.map { GhostPickItem(data: ghostEncodeMediaFile($0), emoji: ghostStickerEmoji($0), key: "s\($0.fileId.id)") }
+            let gifs = result.gifs.map { GhostPickItem(data: ghostEncodeMediaFile($0), emoji: "", key: "g\($0.fileId.id)") }
+            completion(stickers, gifs)
+        })
+    }, thumbnail: { item, completion in
+        guard let file = ghostDecodeMediaFile(item.data) else {
+            completion(nil)
+            return
+        }
+        let _ = (ghostMediaThumbnail(account: account, file: file)
+        |> deliverOnMainQueue).start(next: { data in
+            completion(data.flatMap { UIImage(data: $0) })
+        })
+    })
+}
+
+private func ghostGramSettingsPage(context: AccountContext, page: GhostPage?) -> ViewController {
     let revision = ValuePromise<Int>(0, ignoreRepeated: false)
     var currentRevision = 0
     let refresh: () -> Void = {
@@ -516,6 +794,7 @@ public func ghostGramSettingsController(context: AccountContext) -> ViewControll
     }
 
     var openImpl: ((GhostLink) -> Void)?
+    var openPageImpl: ((GhostPage) -> Void)?
 
     let arguments = GhostGramSettingsArguments(toggle: { option, value in
         option.set(value)
@@ -525,22 +804,32 @@ public func ghostGramSettingsController(context: AccountContext) -> ViewControll
         changed()
     }, open: { link in
         openImpl?(link)
+    }, openPage: { target in
+        openPageImpl?(target)
     })
 
     let signal = combineLatest(queue: .mainQueue(), context.sharedContext.presentationData, revision.get())
     |> map { presentationData, _ -> (ItemListControllerState, (ItemListNodeState, Any)) in
-        let controllerState = ItemListControllerState(presentationData: ItemListPresentationData(presentationData), title: .text("GhostGram 👻"), leftNavigationButton: nil, rightNavigationButton: nil, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back))
-        let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: ghostGramSettingsEntries(), style: .blocks, animateChanges: true)
+        let controllerState = ItemListControllerState(presentationData: ItemListPresentationData(presentationData), title: .text(page?.title ?? "GhostGram 👻"), leftNavigationButton: nil, rightNavigationButton: nil, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back))
+        let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: ghostGramSettingsEntries(page: page), style: .blocks, animateChanges: true)
         return (controllerState, (listState, arguments))
     }
 
     let controller = ItemListController(context: context, state: signal)
     controller.didAppear = { [weak controller] _ in
         refresh()
-        if !GhostSettings.onboardingShown {
+        if page == nil && !GhostSettings.onboardingShown {
             GhostSettings.onboardingShown = true
             ghostInform(context: context, from: controller, title: "Добро пожаловать в GhostGram 👻", text: "Здесь всё, что умеет GhostGram. Начать проще всего с «Пресетов» внизу: «Невидимка» включает режим призрака, «Архивариус» — сохранение удалённого. Действия для отдельного чата — долгое нажатие на чат → «👻 GhostGram…», для сообщения — долгое нажатие на сообщение.")
         }
+    }
+
+    openPageImpl = { [weak controller] target in
+        if target == .automations {
+            openImpl?(.automations)
+            return
+        }
+        ghostPushController(controller, ghostGramSettingsPage(context: context, page: target))
     }
 
     openImpl = { [weak controller] link in
@@ -548,6 +837,9 @@ public func ghostGramSettingsController(context: AccountContext) -> ViewControll
             return
         }
         switch link {
+        case .automations:
+            let dark = context.sharedContext.currentPresentationData.with { $0 }.theme.overallDarkAppearance
+            ghostPresentAutomationsScreen(from: controller, dark: dark, media: ghostAutomationsMedia(context: context))
         case .scheduleHours:
             var fromOptions: [(String, () -> Void)] = []
             for fromHour in [20, 21, 22, 23, 0, 1, 2] {

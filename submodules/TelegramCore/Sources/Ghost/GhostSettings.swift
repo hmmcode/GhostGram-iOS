@@ -228,4 +228,24 @@ public enum GhostSettings {
     public static var isAnyGhostModeOn: Bool {
         return effectiveHideRead || hideOnlineStatus || isGhostScheduleActive || hideTyping || hideStoryViews
     }
+
+    // MARK: - v14
+
+    /// Show upload progress (paper plane, percent, size) in the Dynamic Island.
+    public static var uploadIsland: Bool {
+        get { return bool("ghost.uploadIsland", true) }
+        set { defaults.set(newValue, forKey: "ghost.uploadIsland") }
+    }
+
+    /// Re-upload stickers when sending them, so nobody can open their pack.
+    public static var stickersWithoutPack: Bool {
+        get { return bool("ghost.stickersWithoutPack", false) }
+        set { defaults.set(newValue, forKey: "ghost.stickersWithoutPack") }
+    }
+
+    /// Auto actions (reply with a sticker, GIF, reaction or text when something happens).
+    public static var automationsEnabled: Bool {
+        get { return bool("ghost.automations.on", true) }
+        set { defaults.set(newValue, forKey: "ghost.automations.on") }
+    }
 }
