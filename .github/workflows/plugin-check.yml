@@ -28,7 +28,7 @@ jobs:
           sed '/^import TelegramCore$/d' submodules/TelegramUI/Sources/GhostPluginUI.swift > /tmp/tc/GhostPluginUI.swift
           sed '/^import TelegramCore$/d' submodules/TelegramUI/Sources/GhostRoundVideoPicker.swift > /tmp/tc/GhostRoundVideoPicker.swift
           cp submodules/TelegramUI/Sources/GhostRoundVideoMaker.swift /tmp/tc/
-          cp submodules/SettingsUI/Sources/GhostIcons.swift submodules/TelegramCore/Sources/Ghost/GhostSettings.swift /tmp/tc/
+          cp submodules/SettingsUI/Sources/GhostIcons.swift .github/ci-stubs/SettingsStubs.swift /tmp/tc/
           sed '/^import TelegramCore$/d' submodules/SettingsUI/Sources/GhostAutomationsScreen.swift > /tmp/tc/GhostAutomationsScreen.swift
           sed -n '1,/^\/\/ MARK: - Media helpers/p' submodules/TelegramCore/Sources/Ghost/GhostAutomations.swift | sed '/^import Postbox$/d;/^import SwiftSignalKit$/d' > /tmp/tc/GhostAutomationRules.swift
           SDK=$(xcrun --sdk iphoneos --show-sdk-path)
@@ -37,7 +37,7 @@ jobs:
 
           mkdir -p /tmp/up
           sed '/^import TelegramCore$/d;/^import SwiftSignalKit$/d' submodules/TelegramUI/Sources/GhostUploadActivityController.swift > /tmp/up/GhostUploadActivityController.swift
-          cp .github/ci-stubs/UploadStubs.swift submodules/TelegramCore/Sources/Ghost/GhostSettings.swift /tmp/up/
+          cp .github/ci-stubs/UploadStubs.swift .github/ci-stubs/SettingsStubs.swift /tmp/up/
           xcrun swiftc -typecheck -sdk "$SDK" -target arm64-apple-ios15.0 -swift-version 5 -warnings-as-errors /tmp/up/*.swift
           echo UPLOAD TYPECHECK OK
 
