@@ -1,6 +1,7 @@
 @echo off
 rem GhostGram Desktop: fetch Telegram Desktop, apply GhostGram, build libraries.
 setlocal
+set VSLANG=1033
 set GIT_AUTHOR_NAME=GhostGram Local
 set GIT_AUTHOR_EMAIL=ghost@localhost
 set GIT_COMMITTER_NAME=GhostGram Local

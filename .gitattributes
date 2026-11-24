@@ -2,3 +2,4 @@
 *.png binary
 *.ico binary
 *.tdesktop-theme binary
+*.bat text eol=crlf
