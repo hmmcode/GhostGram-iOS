@@ -15,6 +15,7 @@ enum class Option {
 	HideTyping,
 	HideStoryViews,
 	SaveDeleted,
+	LiquidBackground,
 };
 
 // The master switch turns the whole ghost mode on or off.

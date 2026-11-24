@@ -43,9 +43,12 @@ def patch(rel, pairs):
     if crlf:
         text = text.replace('\r\n', '\n')
     for old, new in pairs:
+        new = escape_non_ascii(new)
+        if new in text:
+            continue  # already applied
         if old not in text:
             sys.exit('GHOST PATCH FAILED: anchor not found in %s:\n%s' % (rel, old))
-        text = text.replace(old, escape_non_ascii(new), 1)
+        text = text.replace(old, new, 1)
     if crlf:
         text = text.replace('\n', '\r\n')
     write(path, text)
@@ -83,9 +86,16 @@ patch('Telegram/Resources/qrc/telegram/telegram.qrc', [(
     '    <file alias="ghost/GhostGlass.tdesktop-theme">../../ghost/GhostGlass.tdesktop-theme</file>\n',
 )])
 
+patch('Telegram/Resources/qrc/telegram/telegram.qrc', [(
+    '    <file alias="ghost/GhostGlass.tdesktop-theme">../../ghost/GhostGlass.tdesktop-theme</file>\n',
+    '    <file alias="ghost/GhostGlass.tdesktop-theme">../../ghost/GhostGlass.tdesktop-theme</file>\n'
+    '    <file alias="ghost/GhostLiquid.tdesktop-theme">../../ghost/GhostLiquid.tdesktop-theme</file>\n',
+)])
+
 # 2. Icons for the settings rows (white glyphs on gradient squares).
 path = os.path.join(SRC, 'settings', 'settings.style')
 style = read(path).replace('\r\n', '\n')
+style = style.split('\nghostIconStealth:')[0].rstrip('\n') + '\n'
 style += '''
 ghostIconStealth: icon {{ "menu/stealth", settingsIconFg }};
 ghostIconRead: icon {{ "menu/read_ticks", settingsIconFg }};
@@ -95,6 +105,7 @@ ghostIconStories: icon {{ "menu/stories_posted", settingsIconFg }};
 ghostIconDeleted: icon {{ "menu/delete", settingsIconFg }};
 ghostIconGlass: icon {{ "menu/palette", settingsIconFg }};
 ghostIconOpacity: icon {{ "menu/caption_hide", settingsIconFg }};
+ghostIconLiquid: icon {{ "menu/night_mode", settingsIconFg }};
 '''
 write(path, style)
 print('patched settings.style')
@@ -217,5 +228,111 @@ patch('Telegram/SourceFiles/window/main_window.cpp', [
 }
 '''),
 ])
+
+# 7. Ghost Liquid: the default wallpaper is a dark graphite gradient with the
+#    ghost pattern (Resources/art/background.tgv is replaced by the overlay).
+patch('Telegram/SourceFiles/data/data_wall_paper.cpp', [(
+    '''	).withPatternIntensity(50).withBackgroundColors({
+		QColor(219, 221, 187),
+		QColor(107, 165, 135),
+		QColor(213, 216, 141),
+		QColor(136, 184, 132),
+	});''', '''	).withPatternIntensity(-62).withBackgroundColors({
+		QColor(0x2A, 0x2D, 0x3C),
+		QColor(0x1C, 0x1E, 0x28),
+		QColor(0x26, 0x28, 0x38),
+		QColor(0x18, 0x1A, 0x22),
+	});'''),
+])
+
+# 8. Living background: the gradient keeps slowly flowing.
+patch('Telegram/SourceFiles/history/history_widget.cpp', [
+    ('#include "history/history_widget.h"\n',
+     '#include "history/history_widget.h"\n\n#include "ghost/ghost_settings.h"\n'),
+    ('''	setAcceptDrops(true);
+	setVisualTabOrder(true);
+''', '''	setAcceptDrops(true);
+	setVisualTabOrder(true);
+
+	{
+		const auto liquid = lifetime().make_state<base::Timer>([=] {
+			if (_list
+				&& isVisible()
+				&& !anim::Disabled()
+				&& Ghost::Get(Ghost::Option::LiquidBackground)) {
+				_list->theme()->rotateComplexGradientBackground();
+			}
+		});
+		liquid->callEach(2600);
+	}
+'''),
+])
+
+# 9. Frosted glass edge on translucent bubbles (only when the bubble colour
+#    has alpha, so ordinary themes are not touched).
+patch('Telegram/SourceFiles/ui/chat/message_bubble.cpp', [
+    ('#include "ui/chat/message_bubble.h"\n',
+     '#include "ui/chat/message_bubble.h"\n#include "ui/painter.h"\n'),
+    (
+    '''void PaintBubble(QPainter &p, const SimpleBubble &args) {
+	if (UsePatternBubble(args)) {
+		PaintPatternBubble(p, args);
+	} else {
+		PaintSolidBubble(p, args);
+	}
+}''', '''void PaintGhostGlassEdge(QPainter &p, const SimpleBubble &args) {
+	const auto &st = args.st->messageStyle(args.outbg, args.selected);
+	if (st.msgBg->c.alpha() >= 255) {
+		return;
+	}
+	const auto radius = [&](BubbleCornerRounding rounding) {
+		switch (rounding) {
+		case BubbleCornerRounding::Large: return float64(BubbleRadiusLarge());
+		case BubbleCornerRounding::Small: return float64(BubbleRadiusSmall());
+		default: return 0.;
+		}
+	};
+	const auto r = QRectF(args.geometry).adjusted(0.5, 0.5, -0.5, -0.5);
+	const auto tl = radius(args.rounding.topLeft);
+	const auto tr = radius(args.rounding.topRight);
+	const auto bl = radius(args.rounding.bottomLeft);
+	const auto br = radius(args.rounding.bottomRight);
+	auto path = QPainterPath();
+	path.moveTo(r.left() + tl, r.top());
+	path.lineTo(r.right() - tr, r.top());
+	path.arcTo(r.right() - 2 * tr, r.top(), 2 * tr, 2 * tr, 90, -90);
+	path.lineTo(r.right(), r.bottom() - br);
+	path.arcTo(r.right() - 2 * br, r.bottom() - 2 * br, 2 * br, 2 * br, 0, -90);
+	path.lineTo(r.left() + bl, r.bottom());
+	path.arcTo(r.left(), r.bottom() - 2 * bl, 2 * bl, 2 * bl, 270, -90);
+	path.lineTo(r.left(), r.top() + tl);
+	path.arcTo(r.left(), r.top(), 2 * tl, 2 * tl, 180, -90);
+	path.closeSubpath();
+
+	auto gradient = QLinearGradient(r.topLeft(), r.bottomLeft());
+	gradient.setColorAt(0., QColor(255, 255, 255, 46));
+	gradient.setColorAt(0.35, QColor(255, 255, 255, 14));
+	gradient.setColorAt(1., QColor(255, 255, 255, 6));
+	auto hq = PainterHighQualityEnabler(p);
+	p.setBrush(Qt::NoBrush);
+	p.setPen(QPen(QBrush(gradient), 1.));
+	p.drawPath(path);
+}
+
+void PaintBubble(QPainter &p, const SimpleBubble &args) {
+	if (UsePatternBubble(args)) {
+		PaintPatternBubble(p, args);
+	} else {
+		PaintSolidBubble(p, args);
+		PaintGhostGlassEdge(p, args);
+	}
+}'''),
+])
+
+# 10. The window says GhostGram.
+patch('Telegram/SourceFiles/window/main_window.cpp', [(
+    'setTitle((user.isEmpty() ? u"Telegram"_q : user) + added + suffix);',
+    'setTitle((user.isEmpty() ? u"GhostGram"_q : user) + added + suffix);',
+)])
 
 print('GHOST PATCH OK')

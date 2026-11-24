@@ -17,7 +17,7 @@ GhostGram for Telegram Desktop: local privacy switches.
 namespace Ghost {
 namespace {
 
-constexpr auto kOptionsCount = 5;
+constexpr auto kOptionsCount = 6;
 
 struct State {
 	std::atomic<bool> loaded = false;
@@ -28,6 +28,7 @@ struct State {
 		true,  // HideTyping
 		true,  // HideStoryViews
 		false, // SaveDeleted
+		true,  // LiquidBackground
 	};
 	int opacity = 100;
 	rpl::event_stream<> changes;
@@ -46,6 +47,7 @@ State &Instance() {
 	case Option::HideTyping: return u"hide_typing"_q;
 	case Option::HideStoryViews: return u"hide_story_views"_q;
 	case Option::SaveDeleted: return u"save_deleted"_q;
+	case Option::LiquidBackground: return u"liquid_background"_q;
 	}
 	return QString();
 }
@@ -115,7 +117,8 @@ void Set(Option option, bool value) {
 }
 
 bool Active(Option option) {
-	if (option == Option::SaveDeleted) {
+	if (option == Option::SaveDeleted
+		|| option == Option::LiquidBackground) {
 		return Get(option);
 	}
 	return Master() && Get(option);
@@ -149,12 +152,12 @@ void ApplyWindowOpacityToAll() {
 }
 
 void ApplyGlassTheme() {
-	const auto path = cWorkingDir() + u"tdata/GhostGlass.tdesktop-theme"_q;
+	const auto path = cWorkingDir() + u"tdata/GhostLiquid.tdesktop-theme"_q;
 	if (QFile::exists(path)) {
 		QFile::setPermissions(path, QFile::ReadOwner | QFile::WriteOwner);
 		QFile::remove(path);
 	}
-	if (!QFile::copy(u":/gui/ghost/GhostGlass.tdesktop-theme"_q, path)) {
+	if (!QFile::copy(u":/gui/ghost/GhostLiquid.tdesktop-theme"_q, path)) {
 		return;
 	}
 	QFile::setPermissions(path, QFile::ReadOwner | QFile::WriteOwner);
