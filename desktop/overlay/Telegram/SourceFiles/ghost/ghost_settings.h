@@ -36,6 +36,12 @@ void ApplyWindowOpacityToAll();
 
 void ApplyGlassTheme();
 
+// The default (ghost pattern) wallpaper, editable in tdata/ghostgram.ini:
+// wallpaper_colors=3d4258,2c2f3e,383b50,272a36 and wallpaper_intensity=-40.
+[[nodiscard]] std::vector<QColor> WallpaperColors();
+[[nodiscard]] int WallpaperIntensity();
+void ReloadFromDisk();
+
 [[nodiscard]] rpl::producer<> Changes();
 
 // Called for every outgoing API request: true means "do not send it".

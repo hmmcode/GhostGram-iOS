@@ -39,7 +39,7 @@ def retint(hexv):
         h = BASE_HUE
         s = min(s, 0.30) * 0.55
         if l < 0.3:
-            l = l * 0.72
+            l = l * 0.97
     elif 170 <= deg <= 265:
         # Telegram blues become the muted ice-lilac accent.
         h = BASE_HUE
@@ -54,48 +54,48 @@ def retint(hexv):
 
 over = {
     # Surfaces: matte graphite, the side bar a touch deeper.
-    'windowBg': '#101116', 'windowBgOver': '#181a21', 'windowBgRipple': '#20232c',
-    'windowShadowFgFallback': '#101116', 'titleBg': '#0c0d11', 'titleBgActive': '#0c0d11',
-    'titleButtonBg': '#0c0d11', 'titleButtonBgActive': '#0c0d11',
-    'titleButtonBgOver': '#1b1d25', 'titleButtonBgActiveOver': '#1b1d25',
-    'titleButtonCloseBg': '#0c0d11', 'titleButtonCloseBgActive': '#0c0d11',
+    'windowBg': '#1b1d26', 'windowBgOver': '#242631', 'windowBgRipple': '#2c2f3b',
+    'windowShadowFgFallback': '#1b1d26', 'titleBg': '#171820', 'titleBgActive': '#171820',
+    'titleButtonBg': '#171820', 'titleButtonBgActive': '#171820',
+    'titleButtonBgOver': '#2a2c36', 'titleButtonBgActiveOver': '#2a2c36',
+    'titleButtonCloseBg': '#171820', 'titleButtonCloseBgActive': '#171820',
     'titleButtonFg': '#7c8191', 'titleButtonFgActive': '#a3a7b5',
     'titleButtonFgOver': '#c9ccd6', 'titleButtonFgActiveOver': '#c9ccd6',
     'titleFg': '#7c8191', 'titleFgActive': '#a3a7b5', 'titleShadow': '#00000000',
-    'dialogsBg': '#0c0d11', 'dialogsBgOver': '#15171d', 'dialogsRippleBg': '#1d2029',
-    'dialogsBgActive': '#1f2230', 'dialogsRippleBgActive': '#272b3c',
+    'dialogsBg': '#171820', 'dialogsBgOver': '#21232c', 'dialogsRippleBg': '#292c37',
+    'dialogsBgActive': '#2c3044', 'dialogsRippleBgActive': '#343950',
     'dialogsNameFgActive': '#f1f2f7', 'dialogsTextFgActive': '#b7bbcb', 'dialogsDateFgActive': '#9ca1b4',
     'dialogsTextFgServiceActive': '#c2c6ff', 'dialogsChatIconFgActive': '#f1f2f7',
     'dialogsSentIconFgActive': '#a9b0ff', 'dialogsSendingIconFgActive': '#9ca1b4',
     'dialogsUnreadBg': '#7b83d6', 'dialogsUnreadBgOver': '#8890e0', 'dialogsUnreadBgActive': '#8890e0',
-    'dialogsUnreadBgMuted': '#3a3d4c', 'dialogsUnreadBgMutedOver': '#424556', 'dialogsUnreadBgMutedActive': '#4a4e62',
-    'dialogsUnreadFgActive': '#0c0d11', 'dialogsSentIconFg': '#a9b0ff', 'dialogsVerifiedIconBg': '#8890e0',
+    'dialogsUnreadBgMuted': '#454859', 'dialogsUnreadBgMutedOver': '#424556', 'dialogsUnreadBgMutedActive': '#4a4e62',
+    'dialogsUnreadFgActive': '#171820', 'dialogsSentIconFg': '#a9b0ff', 'dialogsVerifiedIconBg': '#8890e0',
     'dialogsTextFgService': '#a9b0ff', 'dialogsDraftFg': '#e58aa8',
-    'topBarBg': '#101116', 'historyComposeAreaBg': '#101116', 'historyComposeButtonBgOver': '#181a21',
-    'historyComposeButtonBgRipple': '#20232c', 'emojiPanBg': '#121319', 'emojiPanCategories': '#0f1015',
-    'boxBg': '#13141a', 'boxDividerBg': '#0c0d11', 'boxDividerFg': '#00000000', 'layerBg': '#00000099',
-    'menuBg': '#15161c', 'menuBgOver': '#1d1f27', 'menuBgRipple': '#252832', 'menuSeparatorFg': '#22242c',
-    'searchedBarBg': '#121319', 'filterInputInactiveBg': '#181a21', 'filterInputBorderFg': '#2a2d3a',
-    'sideBarBg': '#0a0b0e', 'sideBarBgActive': '#181a22', 'sideBarBgRipple': '#20232c',
+    'topBarBg': '#1b1d26', 'historyComposeAreaBg': '#1b1d26', 'historyComposeButtonBgOver': '#242631',
+    'historyComposeButtonBgRipple': '#2c2f3b', 'emojiPanBg': '#1e2029', 'emojiPanCategories': '#1a1c24',
+    'boxBg': '#1f2129', 'boxDividerBg': '#171820', 'boxDividerFg': '#00000000', 'layerBg': '#00000099',
+    'menuBg': '#22242d', 'menuBgOver': '#2a2c36', 'menuBgRipple': '#31343f', 'menuSeparatorFg': '#2c2e38',
+    'searchedBarBg': '#1e2029', 'filterInputInactiveBg': '#242631', 'filterInputBorderFg': '#363948',
+    'sideBarBg': '#14151c', 'sideBarBgActive': '#262938', 'sideBarBgRipple': '#2c2f3b',
     'sideBarTextFg': '#7c8191', 'sideBarTextFgActive': '#d7d9ff', 'sideBarIconFg': '#7c8191',
-    'sideBarIconFgActive': '#b4b9ff', 'sideBarBadgeBg': '#7b83d6', 'sideBarBadgeFg': '#0c0d11',
+    'sideBarIconFgActive': '#b4b9ff', 'sideBarBadgeBg': '#7b83d6', 'sideBarBadgeFg': '#171820',
     'shadowFg': '#00000040',
     # Text: soft white and calm greys.
     'windowFg': '#e7e8ee', 'windowBoldFg': '#f1f2f7', 'windowSubTextFg': '#7c8191',
     'windowSubTextFgOver': '#8b90a0', 'windowActiveTextFg': '#a9b0ff',
     # Accent: ice-lilac, never neon.
-    'windowBgActive': '#7b83d6', 'windowFgActive': '#0c0d11', 'activeButtonBg': '#7b83d6',
-    'activeButtonBgOver': '#8890e0', 'activeButtonBgRipple': '#959ce8', 'activeButtonFg': '#0c0d11',
-    'activeButtonFgOver': '#0c0d11', 'activeLineFg': '#8890e0', 'lightButtonFg': '#a9b0ff',
+    'windowBgActive': '#7b83d6', 'windowFgActive': '#171820', 'activeButtonBg': '#7b83d6',
+    'activeButtonBgOver': '#8890e0', 'activeButtonBgRipple': '#959ce8', 'activeButtonFg': '#171820',
+    'activeButtonFgOver': '#171820', 'activeLineFg': '#8890e0', 'lightButtonFg': '#a9b0ff',
     'lightButtonFgOver': '#bcc1ff', 'lightButtonBgOver': '#ffffff0d', 'lightButtonBgRipple': '#ffffff14',
-    'checkboxFg': '#3a3d4c', 'sliderBgActive': '#8890e0', 'sliderBgInactive': '#2a2d3a',
+    'checkboxFg': '#454859', 'sliderBgActive': '#8890e0', 'sliderBgInactive': '#363948',
     'scrollBg': '#ffffff14', 'scrollBgOver': '#ffffff24', 'scrollBarBg': '#ffffff38', 'scrollBarBgOver': '#ffffff52',
     # Chat: frosted glass over the living wallpaper.
     'msgInBg': '#ffffff14', 'msgInBgSelected': '#ffffff22', 'msgInShadow': '#00000000',
     'msgInShadowSelected': '#00000000', 'msgOutBg': '#a9b0ff26', 'msgOutBgSelected': '#a9b0ff38',
     'msgOutShadow': '#00000000', 'msgOutShadowSelected': '#00000000',
-    'msgServiceBg': '#0c0d1199', 'msgServiceBgSelected': '#181a22b3', 'msgServiceFg': '#d7d9e4',
-    'msgDateImgBg': '#0c0d1199', 'msgDateImgBgOver': '#0c0d11b3', 'msgDateImgBgSelected': '#181a22cc',
+    'msgServiceBg': '#1b1d2699', 'msgServiceBgSelected': '#262938b3', 'msgServiceFg': '#d7d9e4',
+    'msgDateImgBg': '#1b1d2699', 'msgDateImgBgOver': '#1b1d26b3', 'msgDateImgBgSelected': '#262938cc',
     'historyTextInFg': '#e7e8ee', 'historyTextOutFg': '#f1f2f7',
     'historyLinkInFg': '#b4b9ff', 'historyLinkOutFg': '#d0d3ff',
     'msgInDateFg': '#8b90a0', 'msgOutDateFg': '#a7abc7', 'msgInDateFgSelected': '#9ca1b4',
@@ -103,10 +103,10 @@ over = {
     'msgInReplyBarColor': '#a9b0ff', 'msgOutReplyBarColor': '#d0d3ff',
     'msgFileInBg': '#7b83d6', 'msgFileOutBg': '#ffffff2e', 'historyOutIconFg': '#b4b9ff',
     'historySendingOutIconFg': '#8b90a0',
-    'historyToDownBg': '#15161ce6', 'historyToDownBgOver': '#1d1f27', 'historyToDownFg': '#a3a7b5',
+    'historyToDownBg': '#22242de6', 'historyToDownBgOver': '#2a2c36', 'historyToDownFg': '#a3a7b5',
     'historyUnreadBarBg': '#ffffff0d', 'historyUnreadBarBorder': '#00000000', 'historyUnreadBarFg': '#a9b0ff',
-    'historyPinnedBg': '#101116', 'historyReplyBg': '#101116',
-    'toastBg': '#15161cf2', 'tooltipBg': '#1d1f27', 'tooltipBorderFg': '#2a2d3a',
+    'historyPinnedBg': '#1b1d26', 'historyReplyBg': '#1b1d26',
+    'toastBg': '#22242df2', 'tooltipBg': '#2a2c36', 'tooltipBorderFg': '#363948',
 }
 
 lines = []

@@ -28,7 +28,7 @@ cmake --build ..\out --config Release --parallel || goto error
 
 if not exist D:\GhostGram-Desktop\TelegramForcePortable mkdir D:\GhostGram-Desktop\TelegramForcePortable
 copy /y ..\out\Release\Telegram.exe D:\GhostGram-Desktop\GhostGram.exe >nul || goto error
-copy /y D:\TBuild\tdesktop\Telegram\Resources\ghost\GhostGlass.tdesktop-theme D:\GhostGram-Desktop\ >nul
+copy /y D:\TBuild\tdesktop\Telegram\Resources\ghost\GhostLiquid.tdesktop-theme D:\GhostGram-Desktop\ >nul
 echo BUILD DONE: D:\GhostGram-Desktop\GhostGram.exe
 exit /b 0
 

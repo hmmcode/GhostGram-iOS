@@ -231,18 +231,17 @@ patch('Telegram/SourceFiles/window/main_window.cpp', [
 
 # 7. Ghost Liquid: the default wallpaper is a dark graphite gradient with the
 #    ghost pattern (Resources/art/background.tgv is replaced by the overlay).
-patch('Telegram/SourceFiles/data/data_wall_paper.cpp', [(
-    '''	).withPatternIntensity(50).withBackgroundColors({
+patch('Telegram/SourceFiles/data/data_wall_paper.cpp', [
+    ('#include "data/data_wall_paper.h"\n',
+     '#include "data/data_wall_paper.h"\n\n#include "ghost/ghost_settings.h"\n'),
+    ('''	).withPatternIntensity(50).withBackgroundColors({
 		QColor(219, 221, 187),
 		QColor(107, 165, 135),
 		QColor(213, 216, 141),
 		QColor(136, 184, 132),
-	});''', '''	).withPatternIntensity(-62).withBackgroundColors({
-		QColor(0x2A, 0x2D, 0x3C),
-		QColor(0x1C, 0x1E, 0x28),
-		QColor(0x26, 0x28, 0x38),
-		QColor(0x18, 0x1A, 0x22),
-	});'''),
+	});''', '''	).withPatternIntensity(
+		Ghost::WallpaperIntensity()
+	).withBackgroundColors(Ghost::WallpaperColors());'''),
 ])
 
 # 8. Living background: the gradient keeps slowly flowing.

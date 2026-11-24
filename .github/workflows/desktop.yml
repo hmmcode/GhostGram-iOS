@@ -390,7 +390,7 @@ jobs:
           mkdir -p pack/GhostGram/TelegramForcePortable
           cp "$OUT/Telegram.exe" pack/GhostGram/GhostGram.exe
           printf 'GhostGram keeps its data in this folder (separate from the official Telegram).\r\n' > pack/GhostGram/TelegramForcePortable/README.txt
-          cp ghost/desktop/overlay/Telegram/Resources/ghost/GhostGlass.tdesktop-theme pack/GhostGram/
+          cp ghost/desktop/overlay/Telegram/Resources/ghost/GhostLiquid.tdesktop-theme pack/GhostGram/
           (cd pack && 7z a -tzip -mx=9 ../GhostGram-Desktop.zip GhostGram > /dev/null)
           ls -lh GhostGram-Desktop.zip
           openssl enc -aes-256-cbc -pbkdf2 -iter 200000 -salt -in GhostGram-Desktop.zip -out GhostGram-Desktop.zip.enc -pass env:IPA_PASSWORD

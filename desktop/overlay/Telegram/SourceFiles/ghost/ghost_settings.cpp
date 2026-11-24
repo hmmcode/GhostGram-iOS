@@ -31,6 +31,8 @@ struct State {
 		true,  // LiquidBackground
 	};
 	int opacity = 100;
+	std::vector<QColor> wallpaperColors;
+	int wallpaperIntensity = -40;
 	rpl::event_stream<> changes;
 	base::flat_set<std::pair<uint64, FullMsgId>> deleted;
 };
@@ -77,6 +79,30 @@ void Load() {
 		settings.value(u"window_opacity"_q, 100).toInt(),
 		60,
 		100);
+
+	auto colors = std::vector<QColor>();
+	const auto list = settings.value(
+		u"wallpaper_colors"_q,
+		u"3d4258,2c2f3e,383b50,272a36"_q).toString().split(',');
+	for (const auto &entry : list) {
+		const auto color = QColor::fromString(u"#"_q + entry.trimmed());
+		if (color.isValid()) {
+			colors.push_back(color);
+		}
+	}
+	if (colors.size() < 2 || colors.size() > 4) {
+		colors = {
+			QColor(0x3D, 0x42, 0x58),
+			QColor(0x2C, 0x2F, 0x3E),
+			QColor(0x38, 0x3B, 0x50),
+			QColor(0x27, 0x2A, 0x36),
+		};
+	}
+	state.wallpaperColors = std::move(colors);
+	state.wallpaperIntensity = std::clamp(
+		settings.value(u"wallpaper_intensity"_q, -40).toInt(),
+		-100,
+		100);
 }
 
 void Save() {
@@ -87,6 +113,16 @@ void Save() {
 		settings.setValue(Key(Option(i)), state.options[i].load());
 	}
 	settings.setValue(u"window_opacity"_q, state.opacity);
+	if (!settings.contains(u"wallpaper_colors"_q)) {
+		auto list = QStringList();
+		for (const auto &color : state.wallpaperColors) {
+			list.push_back(color.name().mid(1));
+		}
+		settings.setValue(u"wallpaper_colors"_q, list.join(','));
+		settings.setValue(
+			u"wallpaper_intensity"_q,
+			state.wallpaperIntensity);
+	}
 	settings.sync();
 }
 
@@ -151,13 +187,36 @@ void ApplyWindowOpacityToAll() {
 	}
 }
 
+std::vector<QColor> WallpaperColors() {
+	Load();
+	return Instance().wallpaperColors;
+}
+
+int WallpaperIntensity() {
+	Load();
+	return Instance().wallpaperIntensity;
+}
+
+void ReloadFromDisk() {
+	Instance().loaded = false;
+	Load();
+	Save();
+}
+
 void ApplyGlassTheme() {
+	ReloadFromDisk();
 	const auto path = cWorkingDir() + u"tdata/GhostLiquid.tdesktop-theme"_q;
 	if (QFile::exists(path)) {
 		QFile::setPermissions(path, QFile::ReadOwner | QFile::WriteOwner);
 		QFile::remove(path);
 	}
-	if (!QFile::copy(u":/gui/ghost/GhostLiquid.tdesktop-theme"_q, path)) {
+	// A theme file next to GhostGram.exe wins over the built-in one, so the
+	// palette can be tuned without rebuilding.
+	const auto local = cExeDir() + u"GhostLiquid.tdesktop-theme"_q;
+	const auto source = QFile::exists(local)
+		? local
+		: u":/gui/ghost/GhostLiquid.tdesktop-theme"_q;
+	if (!QFile::copy(source, path)) {
 		return;
 	}
 	QFile::setPermissions(path, QFile::ReadOwner | QFile::WriteOwner);
