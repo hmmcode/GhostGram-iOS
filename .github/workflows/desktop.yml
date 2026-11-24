@@ -17,15 +17,13 @@ env:
   PREPARE_PATH: "Telegram/build/prepare/prepare.py"
 
 jobs:
-  build:
-    name: Windows x64
+  check:
+    name: Compile check
     runs-on: windows-latest
     timeout-minutes: 355
-
     defaults:
       run:
         shell: cmd
-
     steps:
       - name: Clean up preinstalled software.
         shell: pwsh
@@ -102,8 +100,7 @@ jobs:
         with:
           path: ${{ env.LibrariesPath }}
           key: ghost-win64-libs-${{ env.CACHE_KEY }}
-          restore-keys: ghost-win64-libs-
-
+          restore-keys: ghost-win64-libs-${{ env.CACHE_KEY }}-
       - name: Libraries.
         run: |
           set CARGO_INCREMENTAL=0
@@ -114,20 +111,225 @@ jobs:
         shell: bash
         run: find $LibrariesPath '(' '(' ! '(' -name '*.lib' -o -name '*.a' -o -name '*.exe' -o -name '*.h' -o -name '*.hpp' -o -name '*.inc' -o -name '*.cmake' -o -name '*.pc' -o -path '*/include/*' -o -path '*/objects-*' -o -path '*/cache_keys/*' -o -path '*/patches/*' -o -path '*/nv-codec-headers/*' -o -path '*/src/wallet_engine/*' ')' -type f ')' -o -empty ')' -delete || true
 
-      # Saved even when a later step fails, so a long first run is not lost.
+      - name: Compile check (Debug, test API keys).
+        run: |
+          cd %TBUILD%\tdesktop\Telegram
+
+          call configure.bat ^
+          x64 ^
+          -D TDESKTOP_API_TEST=ON ^
+          -D CMAKE_CONFIGURATION_TYPES=Debug ^
+          -D DESKTOP_APP_DISABLE_AUTOUPDATE=ON ^
+          -D DESKTOP_APP_DISABLE_CRASH_REPORTS=ON
+
+          cmake --build ..\out --config Debug --parallel
+
+  libs:
+    name: Release libraries
+    runs-on: windows-latest
+    timeout-minutes: 355
+    defaults:
+      run:
+        shell: cmd
+    steps:
+      - name: Clean up preinstalled software.
+        shell: pwsh
+        run: |
+          $before = (Get-PSDrive C).Free / 1GB
+          Get-Service docker -ErrorAction SilentlyContinue | Stop-Service -ErrorAction SilentlyContinue
+          wsl --shutdown 2> $null
+          Remove-Item "C:\Android\android-sdk", "C:\Program Files\dotnet", "C:\Miniconda", "C:\msys64", "$env:USERPROFILE\.cargo", "$env:USERPROFILE\.rustup", "$env:LOCALAPPDATA\Docker", "C:\ProgramData\DockerDesktop", "C:\Program Files\PostgreSQL", "C:\PostgreSQL", "C:\Program Files\MongoDB", "C:\Program Files\MySQL" -Recurse -Force -ErrorAction SilentlyContinue
+          Remove-Item "C:\ghcup", "C:\cabal", "C:\Program Files\LLVM", "C:\vcpkg", "C:\tools\kotlinc", "C:\tools\php", "C:\tools\Apache24", "C:\tools\nginx-*", "C:\selenium", "C:\SeleniumWebDrivers", "C:\Program Files\R", "C:\Program Files (x86)\R", "C:\rtools*", "C:\Program Files\Google\Chrome*", "C:\Program Files (x86)\Google\Chrome*", "C:\Program Files\Mozilla Firefox*", "C:\ProgramData\Package Cache" -Recurse -Force -ErrorAction SilentlyContinue
+          Get-ChildItem "C:\ProgramData\Microsoft\VisualStudio\Packages" -Exclude _Instances -ErrorAction SilentlyContinue | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
+          Remove-Item C:\hostedtoolcache\windows\Go*, C:\hostedtoolcache\windows\Ruby*, C:\hostedtoolcache\windows\PyPy*, C:\hostedtoolcache\windows\Java_*, C:\hostedtoolcache\windows\NuGet* -Recurse -Force -ErrorAction SilentlyContinue
+          Write-Host ('{0:N1} GB -> {1:N1} GB free' -f $before, ((Get-PSDrive C).Free / 1GB))
+          exit 0
+
+      - name: Prepare directories.
+        run: |
+          mkdir %userprofile%\TBuild\Libraries
+          mklink /d %GITHUB_WORKSPACE%\TBuild %userprofile%\TBuild
+          echo TBUILD=%GITHUB_WORKSPACE%\TBuild>>%GITHUB_ENV%
+          echo LibrariesPath=%GITHUB_WORKSPACE%\TBuild\Libraries\win64>>%GITHUB_ENV%
+
+      - name: GhostGram sources.
+        uses: actions/checkout@v4
+        with:
+          path: ghost
+
+      - name: Clone Telegram Desktop.
+        uses: actions/checkout@v4
+        with:
+          repository: telegramdesktop/tdesktop
+          ref: ${{ env.TDESKTOP_TAG }}
+          submodules: recursive
+          path: TBuild\tdesktop
+
+      - name: Apply GhostGram.
+        shell: bash
+        run: python ghost/desktop/patch.py "$TBUILD/tdesktop"
+
+      - name: First set up.
+        shell: bash
+        run: |
+          DOCPATH=$TBUILD/tdesktop/docs/building-win.md
+          SDK="$(grep "SDK version" $DOCPATH | sed -r 's/.*\*\*(.*)\*\* SDK version.*/\1/')"
+          echo "SDK=$SDK" >> $GITHUB_ENV
+          sed -i '/CMAKE_${lang}_FLAGS_DEBUG_INIT/s/${_Zi}//' "$PROGRAMFILES"/CMake/share/cmake*/Modules/Platform/Windows-MSVC.cmake
+          echo "$(sha256sum $TBUILD/tdesktop/$PREPARE_PATH | awk '{ print $1 }')" >> CACHE_KEY.txt
+          echo "$SDK" >> CACHE_KEY.txt
+          echo "CACHE_KEY=$(sha256sum CACHE_KEY.txt | awk '{ print $1 }')" >> $GITHUB_ENV
+          git config --global user.email "ghost@example.com"
+          git config --global user.name "GhostGram CI"
+
+      - uses: Eden-CI/msvc-dev-cmd@master
+        name: Native Tools Command Prompt.
+        with:
+          arch: x64
+          sdk: ${{ env.SDK }}
+          toolset: '14.44'
+
+      - name: NuGet sources.
+        run: |
+          nuget sources Disable -Name "Microsoft Visual Studio Offline Packages"
+          nuget sources Add -Source https://api.nuget.org/v3/index.json & exit 0
+
+      - name: Restore ThirdParty cache.
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ env.TBUILD }}\ThirdParty
+          key: ghost-win-third-party-${{ env.CACHE_KEY }}
+          restore-keys: ghost-win-third-party-
+
+      - name: Restore Libraries cache.
+        id: libs
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ env.LibrariesPath }}
+          key: ghost-win64-rel-libs-${{ env.CACHE_KEY }}
+          restore-keys: |
+            ghost-win64-rel-libs-${{ env.CACHE_KEY }}-
+            ghost-win64-libs-${{ env.CACHE_KEY }}-
+      - name: Libraries (debug + release).
+        run: |
+          set CARGO_INCREMENTAL=0
+          %TBUILD%\tdesktop\Telegram\build\prepare\win.bat silent
+
+      - name: Free up some disk space.
+        if: always()
+        shell: bash
+        run: find $LibrariesPath '(' '(' ! '(' -name '*.lib' -o -name '*.a' -o -name '*.exe' -o -name '*.h' -o -name '*.hpp' -o -name '*.inc' -o -name '*.cmake' -o -name '*.pc' -o -path '*/include/*' -o -path '*/objects-*' -o -path '*/cache_keys/*' -o -path '*/patches/*' -o -path '*/nv-codec-headers/*' -o -path '*/src/wallet_engine/*' ')' -type f ')' -o -empty ')' -delete || true
+
       - name: Save ThirdParty cache.
-        if: always() && steps.libs.outputs.cache-hit != 'true'
+        if: always()
         uses: actions/cache/save@v4
         with:
           path: ${{ env.TBUILD }}\ThirdParty
-          key: ghost-win-third-party-${{ env.CACHE_KEY }}-${{ github.run_id }}
+          key: ghost-win-third-party-${{ env.CACHE_KEY }}-${{ github.run_id }}-${{ github.job }}
 
       - name: Save Libraries cache.
-        if: always() && steps.libs.outputs.cache-hit != 'true'
+        if: always()
         uses: actions/cache/save@v4
         with:
           path: ${{ env.LibrariesPath }}
-          key: ghost-win64-libs-${{ env.CACHE_KEY }}-${{ github.run_id }}
+          key: ghost-win64-rel-libs-${{ env.CACHE_KEY }}-${{ github.run_id }}
+
+  release:
+    name: Windows x64 release
+    needs: [ check, libs ]
+    runs-on: windows-latest
+    timeout-minutes: 355
+    defaults:
+      run:
+        shell: cmd
+    steps:
+      - name: Clean up preinstalled software.
+        shell: pwsh
+        run: |
+          $before = (Get-PSDrive C).Free / 1GB
+          Get-Service docker -ErrorAction SilentlyContinue | Stop-Service -ErrorAction SilentlyContinue
+          wsl --shutdown 2> $null
+          Remove-Item "C:\Android\android-sdk", "C:\Program Files\dotnet", "C:\Miniconda", "C:\msys64", "$env:USERPROFILE\.cargo", "$env:USERPROFILE\.rustup", "$env:LOCALAPPDATA\Docker", "C:\ProgramData\DockerDesktop", "C:\Program Files\PostgreSQL", "C:\PostgreSQL", "C:\Program Files\MongoDB", "C:\Program Files\MySQL" -Recurse -Force -ErrorAction SilentlyContinue
+          Remove-Item "C:\ghcup", "C:\cabal", "C:\Program Files\LLVM", "C:\vcpkg", "C:\tools\kotlinc", "C:\tools\php", "C:\tools\Apache24", "C:\tools\nginx-*", "C:\selenium", "C:\SeleniumWebDrivers", "C:\Program Files\R", "C:\Program Files (x86)\R", "C:\rtools*", "C:\Program Files\Google\Chrome*", "C:\Program Files (x86)\Google\Chrome*", "C:\Program Files\Mozilla Firefox*", "C:\ProgramData\Package Cache" -Recurse -Force -ErrorAction SilentlyContinue
+          Get-ChildItem "C:\ProgramData\Microsoft\VisualStudio\Packages" -Exclude _Instances -ErrorAction SilentlyContinue | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
+          Remove-Item C:\hostedtoolcache\windows\Go*, C:\hostedtoolcache\windows\Ruby*, C:\hostedtoolcache\windows\PyPy*, C:\hostedtoolcache\windows\Java_*, C:\hostedtoolcache\windows\NuGet* -Recurse -Force -ErrorAction SilentlyContinue
+          Write-Host ('{0:N1} GB -> {1:N1} GB free' -f $before, ((Get-PSDrive C).Free / 1GB))
+          exit 0
+
+      - name: Prepare directories.
+        run: |
+          mkdir %userprofile%\TBuild\Libraries
+          mklink /d %GITHUB_WORKSPACE%\TBuild %userprofile%\TBuild
+          echo TBUILD=%GITHUB_WORKSPACE%\TBuild>>%GITHUB_ENV%
+          echo LibrariesPath=%GITHUB_WORKSPACE%\TBuild\Libraries\win64>>%GITHUB_ENV%
+
+      - name: GhostGram sources.
+        uses: actions/checkout@v4
+        with:
+          path: ghost
+
+      - name: Clone Telegram Desktop.
+        uses: actions/checkout@v4
+        with:
+          repository: telegramdesktop/tdesktop
+          ref: ${{ env.TDESKTOP_TAG }}
+          submodules: recursive
+          path: TBuild\tdesktop
+
+      - name: Apply GhostGram.
+        shell: bash
+        run: python ghost/desktop/patch.py "$TBUILD/tdesktop"
+
+      - name: First set up.
+        shell: bash
+        run: |
+          DOCPATH=$TBUILD/tdesktop/docs/building-win.md
+          SDK="$(grep "SDK version" $DOCPATH | sed -r 's/.*\*\*(.*)\*\* SDK version.*/\1/')"
+          echo "SDK=$SDK" >> $GITHUB_ENV
+          sed -i '/CMAKE_${lang}_FLAGS_DEBUG_INIT/s/${_Zi}//' "$PROGRAMFILES"/CMake/share/cmake*/Modules/Platform/Windows-MSVC.cmake
+          echo "$(sha256sum $TBUILD/tdesktop/$PREPARE_PATH | awk '{ print $1 }')" >> CACHE_KEY.txt
+          echo "$SDK" >> CACHE_KEY.txt
+          echo "CACHE_KEY=$(sha256sum CACHE_KEY.txt | awk '{ print $1 }')" >> $GITHUB_ENV
+          git config --global user.email "ghost@example.com"
+          git config --global user.name "GhostGram CI"
+
+      - uses: Eden-CI/msvc-dev-cmd@master
+        name: Native Tools Command Prompt.
+        with:
+          arch: x64
+          sdk: ${{ env.SDK }}
+          toolset: '14.44'
+
+      - name: NuGet sources.
+        run: |
+          nuget sources Disable -Name "Microsoft Visual Studio Offline Packages"
+          nuget sources Add -Source https://api.nuget.org/v3/index.json & exit 0
+
+      - name: Restore ThirdParty cache.
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ env.TBUILD }}\ThirdParty
+          key: ghost-win-third-party-${{ env.CACHE_KEY }}
+          restore-keys: ghost-win-third-party-
+
+      - name: Restore Libraries cache.
+        id: libs
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ env.LibrariesPath }}
+          key: ghost-win64-rel-libs-${{ env.CACHE_KEY }}
+          restore-keys: |
+            ghost-win64-rel-libs-${{ env.CACHE_KEY }}-
+            ghost-win64-libs-${{ env.CACHE_KEY }}-
+      - name: Libraries (should be cached).
+        run: |
+          set CARGO_INCREMENTAL=0
+          %TBUILD%\tdesktop\Telegram\build\prepare\win.bat silent
+
+      - name: Free up some disk space.
+        if: always()
+        shell: bash
+        run: find $LibrariesPath '(' '(' ! '(' -name '*.lib' -o -name '*.a' -o -name '*.exe' -o -name '*.h' -o -name '*.hpp' -o -name '*.inc' -o -name '*.cmake' -o -name '*.pc' -o -path '*/include/*' -o -path '*/objects-*' -o -path '*/cache_keys/*' -o -path '*/patches/*' -o -path '*/nv-codec-headers/*' -o -path '*/src/wallet_engine/*' ')' -type f ')' -o -empty ')' -delete || true
 
       - name: Check secrets.
         shell: bash
@@ -187,3 +389,4 @@ jobs:
             --title "GhostGram Desktop (${{ env.TDESKTOP_TAG }}, build ${{ github.run_number }})" \
             --notes "Encrypted Windows build. Decrypt with: openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 -in GhostGram-Desktop.zip.enc -out GhostGram-Desktop.zip" \
             --latest=false
+
