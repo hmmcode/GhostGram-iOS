@@ -210,6 +210,15 @@ jobs:
           restore-keys: |
             ghost-win64-rel-libs-${{ env.CACHE_KEY }}-
             ghost-win64-libs-${{ env.CACHE_KEY }}-
+      - name: ATL for the 14.44 toolset (breakpad needs it).
+        shell: pwsh
+        run: |
+          $vs = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installerswhere.exe" -latest -products * -property installationPath
+          $p = Start-Process -FilePath "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\setup.exe" -ArgumentList @('modify','--installPath',$vs,'--add','Microsoft.VisualStudio.Component.VC.14.44.17.14.ATL','--quiet','--norestart','--nocache') -Wait -PassThru
+          Write-Host "exit $($p.ExitCode)"
+          Get-ChildItem "$vs\VC\Tools\MSVC" | ForEach-Object { "$($_.Name) atl=$(Test-Path (Join-Path $_.FullName 'atlmfc\includetlbase.h'))" }
+          if ($p.ExitCode -ne 0 -and $p.ExitCode -ne 3010) { exit $p.ExitCode }
+
       - name: Libraries (debug + release).
         run: |
           set CARGO_INCREMENTAL=0
@@ -321,6 +330,15 @@ jobs:
           restore-keys: |
             ghost-win64-rel-libs-${{ env.CACHE_KEY }}-
             ghost-win64-libs-${{ env.CACHE_KEY }}-
+      - name: ATL for the 14.44 toolset (breakpad needs it).
+        shell: pwsh
+        run: |
+          $vs = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installerswhere.exe" -latest -products * -property installationPath
+          $p = Start-Process -FilePath "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\setup.exe" -ArgumentList @('modify','--installPath',$vs,'--add','Microsoft.VisualStudio.Component.VC.14.44.17.14.ATL','--quiet','--norestart','--nocache') -Wait -PassThru
+          Write-Host "exit $($p.ExitCode)"
+          Get-ChildItem "$vs\VC\Tools\MSVC" | ForEach-Object { "$($_.Name) atl=$(Test-Path (Join-Path $_.FullName 'atlmfc\includetlbase.h'))" }
+          if ($p.ExitCode -ne 0 -and $p.ExitCode -ne 3010) { exit $p.ExitCode }
+
       - name: Libraries (should be cached).
         run: |
           set CARGO_INCREMENTAL=0
