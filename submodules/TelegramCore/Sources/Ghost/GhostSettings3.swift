@@ -298,6 +298,13 @@ public extension GhostSettings {
         set { store.set(newValue, forKey: "ghost.glassProfile") }
     }
 
+    /// Profile v2: pinned gifts keep orbiting the avatar and a worn gift
+    /// colours the whole profile page.
+    static var profileV2: Bool {
+        get { return flag("ghost.profileV2", true) }
+        set { store.set(newValue, forKey: "ghost.profileV2") }
+    }
+
     /// Cover the app with black while the screen is being recorded or mirrored.
     static var hideOnScreenRecording: Bool {
         get { return flag("ghost.hideOnCapture", false) }

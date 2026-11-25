@@ -64,6 +64,7 @@ private enum GhostToggle: Int32 {
     case hideOnCapture
     case downloadBoost
     case glassProfile
+    case profileV2
     case advertiseBadge
     case showBadges
     case hiddenChats
@@ -119,6 +120,7 @@ private enum GhostToggle: Int32 {
         case .hideOnCapture: return "Скрывать экран при записи"
         case .downloadBoost: return "Ускоритель загрузок"
         case .glassProfile: return "Стеклянный профиль"
+        case .profileV2: return "Профиль v2 (подарки кружат)"
         case .advertiseBadge: return "👻 у моего имени для юзеров GhostGram"
         case .showBadges: return "Показывать 👻 у юзеров GhostGram"
         case .hiddenChats: return "Скрытые чаты"
@@ -176,6 +178,7 @@ private enum GhostToggle: Int32 {
         case .hideOnCapture: return GhostSettings.hideOnScreenRecording
         case .downloadBoost: return GhostSettings.downloadBoost
         case .glassProfile: return GhostSettings.glassProfile
+        case .profileV2: return GhostSettings.profileV2
         case .advertiseBadge: return GhostSettings.advertiseGhostGram
         case .showBadges: return GhostSettings.showGhostBadges
         case .hiddenChats: return GhostSettings.hiddenChatsEnabled
@@ -234,6 +237,7 @@ private enum GhostToggle: Int32 {
         case .hideOnCapture: pair = ("record.circle", .systemRed)
         case .downloadBoost: pair = ("bolt.fill", .systemYellow)
         case .glassProfile: pair = ("sparkles", .systemCyan)
+        case .profileV2: pair = ("gift.fill", .systemPink)
         case .advertiseBadge: pair = ("person.badge.plus", .systemPurple)
         case .showBadges: pair = ("eye.fill", .systemPurple)
         case .hiddenChats: pair = ("eye.slash.fill", .systemGray)
@@ -292,6 +296,7 @@ private enum GhostToggle: Int32 {
         case .hideOnCapture: GhostSettings.hideOnScreenRecording = value
         case .downloadBoost: GhostSettings.downloadBoost = value
         case .glassProfile: GhostSettings.glassProfile = value
+        case .profileV2: GhostSettings.profileV2 = value
         case .advertiseBadge: GhostSettings.advertiseGhostGram = value
         case .showBadges: GhostSettings.showGhostBadges = value
         case .hiddenChats: GhostSettings.hiddenChatsEnabled = value
@@ -432,7 +437,7 @@ private enum GhostPage: Int32, CaseIterable {
         case .content: return [.bypassCopyProtection, .hideScreenshots, .hideSponsored, .hideStories]
         case .people: return [.profileId, .profileLog]
         case .island: return [.uploadIsland, .dynamicIsland, .islandBadge]
-        case .interface: return [.hidePhone, .confirmVoice, .confirmCalls, .messageDetails, .notes, .seconds, .doubleTapReply, .noSwipeReply, .noHaptics, .hideNewsTab, .hideBadge, .glassProfile, .showBadges, .advertiseBadge, .minimalTabs]
+        case .interface: return [.hidePhone, .confirmVoice, .confirmCalls, .messageDetails, .notes, .seconds, .doubleTapReply, .noSwipeReply, .noHaptics, .hideNewsTab, .hideBadge, .glassProfile, .profileV2, .showBadges, .advertiseBadge, .minimalTabs]
         case .security: return [.hiddenChats, .panicShake, .hideOnCapture, .protectMenu]
         case .manage: return []
         }
@@ -686,6 +691,7 @@ private func ghostGramSettingsEntries(page: GhostPage?) -> [GhostGramSettingsEnt
         toggle(1, .confirmCalls)
         header(2, "ВИД")
         toggle(2, .glassProfile)
+        toggle(2, .profileV2)
         toggle(2, .minimalTabs)
         toggle(2, .hideNewsTab)
         toggle(2, .hideBadge)

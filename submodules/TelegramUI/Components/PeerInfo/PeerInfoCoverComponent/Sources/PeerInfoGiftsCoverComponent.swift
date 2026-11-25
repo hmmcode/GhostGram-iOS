@@ -135,7 +135,67 @@ public final class PeerInfoGiftsCoverComponent: Component {
         private var isCurrentlyInHierarchy = false
         
         private var isUpdating = false
-        
+
+        // GhostGram profile v2: the gifts circle the avatar.
+        private var orbitLink: CADisplayLink?
+        private let orbitStart = CACurrentMediaTime()
+        private var orbitIndices: [AnyHashable: (index: Int, count: Int, scale: CGFloat)] = [:]
+        private var orbitCenter = CGPoint()
+        private var orbitAvatarRadius: CGFloat = 0.0
+        private var orbitFraction: CGFloat = 1.0
+
+        private final class OrbitTarget: NSObject {
+            weak var view: View?
+            init(view: View) {
+                self.view = view
+            }
+            @objc func tick() {
+                self.view?.orbitTick()
+            }
+        }
+
+        private func orbitAngle(index: Int, count: Int, time: CGFloat) -> (distance: CGFloat, angle: CGFloat) {
+            let innerCount = min(count, 6)
+            let isInner = index < innerCount
+            let ringCount = isInner ? innerCount : max(1, count - innerCount)
+            let ringIndex = isInner ? index : index - innerCount
+            let offset: CGFloat = isInner ? 0.0 : .pi / CGFloat(ringCount)
+            let base = CGFloat.pi * 2.0 * CGFloat(ringIndex) / CGFloat(max(1, ringCount)) + offset - .pi / 2.0
+            let speed: CGFloat = isInner ? 0.32 : -0.21
+            let distance = self.orbitAvatarRadius + (isInner ? 28.0 : 62.0)
+            return (distance, base + time * speed)
+        }
+
+        fileprivate func orbitTick() {
+            guard self.orbitFraction < 0.001, !self.orbitIndices.isEmpty else {
+                return
+            }
+            let time = CGFloat(CACurrentMediaTime() - self.orbitStart)
+            CATransaction.begin()
+            CATransaction.setDisableActions(true)
+            for (id, iconLayer) in self.iconLayers {
+                guard let item = self.orbitIndices[id] else {
+                    continue
+                }
+                let orbit = self.orbitAngle(index: item.index, count: item.count, time: time)
+                iconLayer.position = getAbsolutePosition(distance: orbit.distance, angle: orbit.angle, centerPoint: self.orbitCenter)
+            }
+            CATransaction.commit()
+        }
+
+        private func updateOrbitLink() {
+            let needed = GhostSettings.profileV2 && self.isCurrentlyInHierarchy && !self.iconLayers.isEmpty
+            if needed, self.orbitLink == nil {
+                let link = CADisplayLink(target: OrbitTarget(view: self), selector: #selector(OrbitTarget.tick))
+                link.preferredFrameRateRange = CAFrameRateRange(minimum: 30.0, maximum: 60.0, preferred: 60.0)
+                link.add(to: .main, forMode: .common)
+                self.orbitLink = link
+            } else if !needed, let link = self.orbitLink {
+                link.invalidate()
+                self.orbitLink = nil
+            }
+        }
+
         override public init(frame: CGRect) {
             super.init(frame: frame)
             
@@ -149,6 +209,7 @@ public final class PeerInfoGiftsCoverComponent: Component {
                 }
                 self.isCurrentlyInHierarchy = true
                 self.updateAnimations()
+                self.updateOrbitLink()
             }
             
             self.trackingLayer.didExitHierarchy = { [weak self] in
@@ -156,6 +217,7 @@ public final class PeerInfoGiftsCoverComponent: Component {
                     return
                 }
                 self.isCurrentlyInHierarchy = false
+                self.updateOrbitLink()
             }
             
             self.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(self.tapped(_:))))
@@ -167,6 +229,7 @@ public final class PeerInfoGiftsCoverComponent: Component {
         
         deinit {
             self.giftsDisposable?.dispose()
+            self.orbitLink?.invalidate()
         }
         
         @objc private func tapped(_ gestureRecognizer: UITapGestureRecognizer) {
@@ -364,6 +427,13 @@ public final class PeerInfoGiftsCoverComponent: Component {
                                                                           
             var validIds = Set<AnyHashable>()
             var index = 0
+            let orbiting = GhostSettings.profileV2
+            let orbitCount = min(self.gifts.count, 12, self.iconPositions.count)
+            let orbitTime = CGFloat(CACurrentMediaTime() - self.orbitStart)
+            self.orbitCenter = component.avatarCenter
+            self.orbitAvatarRadius = component.avatarSize.width / 2.0
+            self.orbitFraction = component.avatarTransitionFraction
+            self.orbitIndices.removeAll()
             for gift in self.gifts.prefix(12) {
                 guard index < self.iconPositions.count else {
                     break
@@ -377,7 +447,12 @@ public final class PeerInfoGiftsCoverComponent: Component {
                 validIds.insert(id)
                 
                 var iconTransition = transition
-                let iconPosition = self.iconPositions[index]
+                var iconPosition = self.iconPositions[index]
+                if orbiting {
+                    let orbit = self.orbitAngle(index: index, count: orbitCount, time: orbitTime)
+                    iconPosition = PositionGenerator.Position(distance: orbit.distance, angle: orbit.angle, scale: min(1.0, max(0.85, iconPosition.scale)))
+                    self.orbitIndices[id] = (index, orbitCount, iconPosition.scale)
+                }
                 let iconLayer: GiftIconLayer
                 if let current = self.iconLayers[id] {
                     iconLayer = current
@@ -442,6 +517,7 @@ public final class PeerInfoGiftsCoverComponent: Component {
             for id in removeIds {
                 self.iconLayers.removeValue(forKey: id)
             }
+            self.updateOrbitLink()
             return availableSize
         }
     }

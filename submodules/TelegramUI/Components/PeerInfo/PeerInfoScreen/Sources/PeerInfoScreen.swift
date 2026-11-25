@@ -6118,6 +6118,33 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, PeerInfoScreenNodePro
         for subview in glassView.subviews {
             subview.frame = glassView.bounds
         }
+        // Profile v2: a worn collectible gift paints the page in its backdrop.
+        var giftColors: (UIColor, UIColor)?
+        if GhostSettings.profileV2, let status = peer.emojiStatus, case let .starGift(_, _, _, _, _, innerColor, outerColor, _, _) = status.content {
+            giftColors = (UIColor(rgb: UInt32(bitPattern: innerColor)), UIColor(rgb: UInt32(bitPattern: outerColor)))
+        }
+        let gradientLayer: CAGradientLayer
+        if let current = glassView.layer.sublayers?.first(where: { $0.name == "ghost.v2" }) as? CAGradientLayer {
+            gradientLayer = current
+        } else {
+            gradientLayer = CAGradientLayer()
+            gradientLayer.name = "ghost.v2"
+            glassView.layer.addSublayer(gradientLayer)
+        }
+        gradientLayer.frame = glassView.bounds
+        if let (innerColor, outerColor) = giftColors {
+            gradientLayer.isHidden = false
+            gradientLayer.colors = [
+                outerColor.mixedWith(innerColor, alpha: 0.35).cgColor,
+                outerColor.cgColor,
+                outerColor.mixedWith(.black, alpha: 0.18).cgColor
+            ]
+            gradientLayer.locations = [0.0, 0.45, 1.0]
+            gradientLayer.startPoint = CGPoint(x: 0.5, y: 0.0)
+            gradientLayer.endPoint = CGPoint(x: 0.5, y: 1.0)
+        } else {
+            gradientLayer.isHidden = true
+        }
         if self.ghostGlassPeerId != peer.id {
             self.ghostGlassPeerId = peer.id
             let imageView = glassView.viewWithTag(1) as? UIImageView
