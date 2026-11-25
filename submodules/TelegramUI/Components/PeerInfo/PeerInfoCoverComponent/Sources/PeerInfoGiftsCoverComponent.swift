@@ -14,6 +14,7 @@ import LokiRng
 import TextFormat
 import HierarchyTrackingLayer
 import PeerInfoPaneNode
+import GlassBackgroundComponent
 import TelegramStringFormatting
 
 public final class PeerInfoGiftsCoverComponent: Component {
@@ -644,19 +645,33 @@ private class GiftIconLayer: SimpleLayer {
     let starsLayer = StarsEffectLayer()
     let animationLayer: InlineStickerItemLayer
     // GhostGram profile v2: a frosted glass bubble tinted with the gift backdrop.
-    let bubbleLayer = CAGradientLayer()
+    let bubbleLayer = SimpleLayer()
+    let bubbleTintLayer = CAGradientLayer()
     let bubbleShineLayer = CAGradientLayer()
+    // Blurred copy of whatever is under the bubble (the name, the page), so the
+    // bubble reads as glass when it floats over the title.
+    let bubbleBackdropLayer: CALayer? = GhostSettings.profileV2 ? createBackdropLayer() : nil
 
     private func setupBubble(color: UIColor) {
         guard GhostSettings.profileV2 else {
             return
         }
-        self.bubbleLayer.colors = [
-            color.mixedWith(.white, alpha: 0.3).withAlphaComponent(0.55).cgColor,
-            color.withAlphaComponent(0.3).cgColor
+        if let backdropLayer = self.bubbleBackdropLayer {
+            backdropLayer.setValue(1.0 as NSNumber, forKey: "scale")
+            backdropLayer.rasterizationScale = 1.0
+            if let blurFilter = CALayer.blur() {
+                blurFilter.setValue(5.0 as NSNumber, forKey: "inputRadius")
+                backdropLayer.filters = [blurFilter]
+            }
+            self.bubbleLayer.addSublayer(backdropLayer)
+        }
+        self.bubbleTintLayer.colors = [
+            color.mixedWith(.white, alpha: 0.3).withAlphaComponent(0.45).cgColor,
+            color.withAlphaComponent(0.22).cgColor
         ]
-        self.bubbleLayer.startPoint = CGPoint(x: 0.2, y: 0.0)
-        self.bubbleLayer.endPoint = CGPoint(x: 0.8, y: 1.0)
+        self.bubbleTintLayer.startPoint = CGPoint(x: 0.2, y: 0.0)
+        self.bubbleTintLayer.endPoint = CGPoint(x: 0.8, y: 1.0)
+        self.bubbleLayer.addSublayer(self.bubbleTintLayer)
         self.bubbleLayer.borderWidth = 1.0
         self.bubbleLayer.borderColor = UIColor(white: 1.0, alpha: 0.45).cgColor
         self.bubbleLayer.masksToBounds = true
@@ -807,6 +822,8 @@ private class GiftIconLayer: SimpleLayer {
         self.bubbleLayer.frame = bubbleFrame
         self.bubbleLayer.cornerRadius = bubbleFrame.width / 2.0
         self.bubbleShineLayer.frame = CGRect(origin: .zero, size: bubbleFrame.size)
+        self.bubbleTintLayer.frame = CGRect(origin: .zero, size: bubbleFrame.size)
+        self.bubbleBackdropLayer?.frame = CGRect(origin: .zero, size: bubbleFrame.size)
         self.animationLayer.bounds = CGRect(origin: .zero, size: self.bounds.size)
         self.animationLayer.position = CGPoint(x: self.bounds.width / 2.0, y: self.bounds.height / 2.0)
     }

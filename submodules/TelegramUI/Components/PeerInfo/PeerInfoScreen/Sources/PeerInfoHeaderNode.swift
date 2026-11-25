@@ -2554,6 +2554,10 @@ final class PeerInfoHeaderNode: ASDisplayNode {
                 if giftsCoverView.superview == nil {
                     self.view.insertSubview(giftsCoverView, aboveSubview: self.backgroundBannerView)
                 }
+                // GhostGram profile v2: the gift bubbles fly over the name.
+                if GhostSettings.profileV2, giftsCoverView.superview === self.view, let index = self.view.subviews.firstIndex(of: giftsCoverView), let titleIndex = self.view.subviews.firstIndex(of: self.regularContentNode.view), index < titleIndex {
+                    self.view.insertSubview(giftsCoverView, aboveSubview: self.regularContentNode.view)
+                }
                 if additive {
                     transition.updateFrameAdditive(view: giftsCoverView, frame: CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: giftsCoverSize))
                 } else {

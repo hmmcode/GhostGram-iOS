@@ -1004,7 +1004,7 @@ final class PeerInfoPaneContainerNode: ASDisplayNode, ASGestureRecognizerDelegat
             }
         }
         
-        self.backgroundColor = (GhostSettings.glassProfile && self.currentPaneKey == .gifts) ? .clear : backgroundColor
+        self.backgroundColor = GhostSettings.glassProfile ? .clear : backgroundColor
 
         let isScrollingLockedAtTop = expansionFraction < 1.0 - CGFloat.ulpOfOne
 
