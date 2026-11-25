@@ -490,15 +490,30 @@ public final class PeerInfoGiftsCoverComponent: Component {
                 let effectivePosition = interpolatePosition(from: iconPosition, to: centerPosition, t: itemScaleFraction)
                 let effectiveAngle = toAngle * itemScaleFraction
                 
-                let absolutePosition = getAbsolutePosition(position: effectivePosition, centerPoint: component.avatarCenter)
-                                
+                var absolutePosition = getAbsolutePosition(position: effectivePosition, centerPoint: component.avatarCenter)
+                var itemScale = iconPosition.scale * (1.0 - itemScaleFraction)
+                var itemAlpha = 1.0 - itemScaleFraction
+                var itemRotation = effectiveAngle
+                if orbiting {
+                    // GhostGram profile v2: when the header collapses the bubbles
+                    // fly up and gather in the Dynamic Island.
+                    let islandPoint = CGPoint(x: availableSize.width / 2.0, y: component.statusBarHeight > 50.0 ? 29.0 : max(10.0, component.statusBarHeight / 2.0))
+                    let orbitPoint = getAbsolutePosition(position: iconPosition, centerPoint: component.avatarCenter)
+                    let t = max(0.0, min(1.0, itemScaleFraction))
+                    let eased = t * t * (3.0 - 2.0 * t)
+                    absolutePosition = CGPoint(x: orbitPoint.x + (islandPoint.x - orbitPoint.x) * eased, y: orbitPoint.y + (islandPoint.y - orbitPoint.y) * eased)
+                    itemScale = iconPosition.scale * (1.0 - 0.8 * eased)
+                    itemAlpha = 1.0 - max(0.0, min(1.0, (t - 0.7) / 0.3))
+                    itemRotation = 0.0
+                }
+
                 iconTransition.setBounds(layer: iconLayer, bounds: CGRect(origin: .zero, size: iconSize))
                 iconTransition.setPosition(layer: iconLayer, position: absolutePosition)
-                iconLayer.updateRotation(effectiveAngle, transition: iconTransition)
-                iconTransition.setScale(layer: iconLayer, scale: iconPosition.scale * (1.0 - itemScaleFraction))
-                
+                iconLayer.updateRotation(itemRotation, transition: iconTransition)
+                iconTransition.setScale(layer: iconLayer, scale: itemScale)
+
                 if !self.scheduledAnimateIn {
-                    iconTransition.setAlpha(layer: iconLayer, alpha: 1.0 - itemScaleFraction)
+                    iconTransition.setAlpha(layer: iconLayer, alpha: itemAlpha)
                 }
                 
                 index += 1
@@ -628,6 +643,32 @@ private class GiftIconLayer: SimpleLayer {
     let shadowLayer = SimpleLayer()
     let starsLayer = StarsEffectLayer()
     let animationLayer: InlineStickerItemLayer
+    // GhostGram profile v2: a frosted glass bubble tinted with the gift backdrop.
+    let bubbleLayer = CAGradientLayer()
+    let bubbleShineLayer = CAGradientLayer()
+
+    private func setupBubble(color: UIColor) {
+        guard GhostSettings.profileV2 else {
+            return
+        }
+        self.bubbleLayer.colors = [
+            color.mixedWith(.white, alpha: 0.3).withAlphaComponent(0.55).cgColor,
+            color.withAlphaComponent(0.3).cgColor
+        ]
+        self.bubbleLayer.startPoint = CGPoint(x: 0.2, y: 0.0)
+        self.bubbleLayer.endPoint = CGPoint(x: 0.8, y: 1.0)
+        self.bubbleLayer.borderWidth = 1.0
+        self.bubbleLayer.borderColor = UIColor(white: 1.0, alpha: 0.45).cgColor
+        self.bubbleLayer.masksToBounds = true
+        self.bubbleShineLayer.colors = [
+            UIColor(white: 1.0, alpha: 0.4).cgColor,
+            UIColor(white: 1.0, alpha: 0.0).cgColor
+        ]
+        self.bubbleShineLayer.locations = [0.0, 0.55]
+        self.bubbleLayer.addSublayer(self.bubbleShineLayer)
+        self.shadowLayer.isHidden = true
+        self.insertSublayer(self.bubbleLayer, at: 0)
+    }
     
     override init(layer: Any) {
         guard let layer = layer as? GiftIconLayer else {
@@ -753,14 +794,19 @@ private class GiftIconLayer: SimpleLayer {
         self.addSublayer(self.shadowLayer)
         self.addSublayer(self.starsLayer)
         self.addSublayer(self.animationLayer)
+        self.setupBubble(color: color)
     }
-    
+
     required init?(coder: NSCoder) {
         preconditionFailure()
     }
     
     override func layoutSublayers() {
         self.shadowLayer.frame = CGRect(origin: .zero, size: self.bounds.size).insetBy(dx: -8.0, dy: -8.0)
+        let bubbleFrame = CGRect(origin: .zero, size: self.bounds.size).insetBy(dx: -8.0, dy: -8.0)
+        self.bubbleLayer.frame = bubbleFrame
+        self.bubbleLayer.cornerRadius = bubbleFrame.width / 2.0
+        self.bubbleShineLayer.frame = CGRect(origin: .zero, size: bubbleFrame.size)
         self.animationLayer.bounds = CGRect(origin: .zero, size: self.bounds.size)
         self.animationLayer.position = CGPoint(x: self.bounds.width / 2.0, y: self.bounds.height / 2.0)
     }
