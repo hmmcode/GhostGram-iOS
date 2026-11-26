@@ -148,6 +148,9 @@ final class OverlayAudioPlayerControlsNode: ASDisplayNode {
     private let backgroundNode: ASImageNode
     
     let albumArtNode: TransformImageNode
+    // GhostGram: lyrics button and a tint taken from the album cover.
+    private let ghostLyricsButton = HighlightableButtonNode()
+    private let ghostTintLayer = CAGradientLayer()
     private let titleNode: TextNode
     private let title: ComponentView<Empty>
     private let descriptionNode: TextNode
@@ -314,6 +317,19 @@ final class OverlayAudioPlayerControlsNode: ASDisplayNode {
         self.addSubnode(self.descriptionNode)
         self.addSubnode(self.artistButton)
         self.addSubnode(self.shareNode)
+        self.addSubnode(self.ghostLyricsButton)
+        self.ghostLyricsButton.setImage(generateTintedImage(image: UIImage(systemName: "quote.bubble"), color: presentationData.theme.list.itemPrimaryTextColor), for: [])
+        self.ghostLyricsButton.isHidden = !GhostSettings.playerLyricsButton
+        self.ghostLyricsButton.addTarget(self, action: #selector(self.ghostLyricsPressed), forControlEvents: .touchUpInside)
+        self.ghostTintLayer.startPoint = CGPoint(x: 0.5, y: 0.0)
+        self.ghostTintLayer.endPoint = CGPoint(x: 0.5, y: 1.0)
+        self.ghostTintLayer.isHidden = true
+        self.layer.insertSublayer(self.ghostTintLayer, above: self.backgroundNode.layer)
+        self.albumArtNode.imageUpdated = { [weak self] image in
+            DispatchQueue.main.async {
+                self?.ghostApplyCoverTint(image)
+            }
+        }
         
         self.addSubnode(self.leftDurationLabel)
         self.addSubnode(self.rightDurationLabel)
@@ -764,6 +780,37 @@ final class OverlayAudioPlayerControlsNode: ASDisplayNode {
         }
     }
     
+    @objc private func ghostLyricsPressed() {
+        guard let displayData = self.displayData, case let .music(title, performer, _, _, _) = displayData, let title = title, !title.isEmpty else {
+            return
+        }
+        ghostShowLyrics(title: title, performer: performer ?? "", duration: Int(self.currentDuration))
+    }
+
+    /// Averages the cover down to one colour and lays it over the panel as a soft gradient.
+    private func ghostApplyCoverTint(_ image: UIImage?) {
+        guard GhostSettings.playerCoverColors, let cgImage = image?.cgImage else {
+            self.ghostTintLayer.isHidden = true
+            return
+        }
+        var pixel = [UInt8](repeating: 0, count: 4)
+        let drawn: Bool = pixel.withUnsafeMutableBytes { buffer -> Bool in
+            guard let context = CGContext(data: buffer.baseAddress, width: 1, height: 1, bitsPerComponent: 8, bytesPerRow: 4, space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else {
+                return false
+            }
+            context.interpolationQuality = .medium
+            context.draw(cgImage, in: CGRect(x: 0.0, y: 0.0, width: 1.0, height: 1.0))
+            return true
+        }
+        guard drawn else {
+            self.ghostTintLayer.isHidden = true
+            return
+        }
+        let color = UIColor(red: CGFloat(pixel[0]) / 255.0, green: CGFloat(pixel[1]) / 255.0, blue: CGFloat(pixel[2]) / 255.0, alpha: 1.0)
+        self.ghostTintLayer.colors = [color.withAlphaComponent(0.55).cgColor, color.withAlphaComponent(0.15).cgColor]
+        self.ghostTintLayer.isHidden = false
+    }
+
     private func updatePlayPauseButton(paused: Bool, animated: Bool) {
         self.playPauseIconNode.customColor = self.presentationData.theme.list.itemPrimaryTextColor
         if paused {
@@ -850,6 +897,7 @@ final class OverlayAudioPlayerControlsNode: ASDisplayNode {
         self.updateLabels(transition: transition)
         
         transition.updateFrame(node: self.shareNode, frame: CGRect(origin: CGPoint(x: width - rightInset - sideInset - 34.0, y: infoVerticalOrigin), size: CGSize(width: 42.0, height: 42.0)))
+        transition.updateFrame(node: self.ghostLyricsButton, frame: CGRect(origin: CGPoint(x: width - rightInset - sideInset - 34.0 - 40.0, y: infoVerticalOrigin), size: CGSize(width: 42.0, height: 42.0)))
         
         let albumArtSize = CGSize(width: 46.0, height: 46.0)
         let makeAlbumArtLayout = self.albumArtNode.asyncLayout()
@@ -882,6 +930,10 @@ final class OverlayAudioPlayerControlsNode: ASDisplayNode {
         transition.updateFrame(node: self.rateButton, frame: CGRect(origin: CGPoint(x: width - sideInset - rightInset - rateRightOffset - 38.0, y: scrubberVerticalOrigin + 10.0 + rightLabelVerticalOffset - 6.0 + UIScreenPixel), size: CGSize(width: 24.0, height: 44.0)))
         
         transition.updateFrame(node: self.backgroundNode, frame: CGRect(origin: CGPoint(x: 0.0, y: -8.0), size: CGSize(width: width, height: finalPanelHeight + 8.0)))
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        self.ghostTintLayer.frame = CGRect(origin: CGPoint(), size: CGSize(width: width, height: finalPanelHeight))
+        CATransaction.commit()
         
         let buttonSize = CGSize(width: 64.0, height: 64.0)
         let buttonsWidth = min(width - leftInset - rightInset - sideButtonsInset * 2.0, 320.0)

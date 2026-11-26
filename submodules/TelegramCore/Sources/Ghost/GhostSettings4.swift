@@ -116,6 +116,24 @@ public extension GhostSettings {
         set { store4.set(newValue, forKey: "ghost.swapSwipes") }
     }
 
+    /// No live camera tile in the attachment gallery.
+    static var hideCameraTile: Bool {
+        get { return flag4("ghost.hideCameraTile", false) }
+        set { store4.set(newValue, forKey: "ghost.hideCameraTile") }
+    }
+
+    /// The music player panel takes the colour of the album cover.
+    static var playerCoverColors: Bool {
+        get { return flag4("ghost.playerCoverColors", true) }
+        set { store4.set(newValue, forKey: "ghost.playerCoverColors") }
+    }
+
+    /// A lyrics button in the music player.
+    static var playerLyricsButton: Bool {
+        get { return flag4("ghost.playerLyrics", true) }
+        set { store4.set(newValue, forKey: "ghost.playerLyrics") }
+    }
+
     static func hidesReactions(message: Message) -> Bool {
         if !hideReactionsPrivate && !hideReactionsGroups && !hideReactionsChannels {
             return false

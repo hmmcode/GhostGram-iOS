@@ -279,7 +279,7 @@ public final class MediaPickerScreenImpl: ViewController, MediaPickerScreen, Att
             case .assets(_, .files), .assets(_, .passport), .assets(_, .qrCode):
                 return .noCamera
             case .assets(nil, .default):
-                return .chatAssets
+                return GhostSettings.hideCameraTile ? .noCamera : .chatAssets
             case .assets(nil, .createSticker):
                 return .sticker
             case .assets(nil, .createAvatar):

@@ -98,6 +98,54 @@
       "file": "fun.js"
     },
     {
+      "id": "wiki",
+      "name": "Википедия",
+      "version": "1.0",
+      "author": "GhostGram",
+      "description": ".wiki запрос — отправит короткую справку из Википедии со ссылкой. Язык в настройках.",
+      "file": "wiki.js"
+    },
+    {
+      "id": "crypto",
+      "name": "Крипта",
+      "version": "1.0",
+      "author": "GhostGram",
+      "description": ".crypto btc — цена монеты в долларах и рублях и изменение за сутки. Понимает btc, eth, ton, usdt, sol, doge, bnb, xrp, trx, ltc, not.",
+      "file": "crypto.js"
+    },
+    {
+      "id": "layout",
+      "name": "Раскладка",
+      "version": "1.0",
+      "author": "GhostGram",
+      "description": ".fix ghbdtn → «привет»: исправит текст, набранный не в той раскладке. .fixen — наоборот. Можно включить автоисправление своих сообщений.",
+      "file": "layout.js"
+    },
+    {
+      "id": "lyrics",
+      "name": "Текст песни",
+      "version": "1.0",
+      "author": "GhostGram",
+      "description": ".lyrics исполнитель - песня — отправит текст песни из открытой базы LRCLIB. .lyricsme — покажет текст только тебе.",
+      "file": "lyrics.js"
+    },
+    {
+      "id": "stats",
+      "name": "Моя статистика",
+      "version": "1.0",
+      "author": "GhostGram",
+      "description": "Считает, сколько ты пишешь: сообщения и слова за сегодня, неделю и всё время, самые активные чаты. .stats — посмотреть (видишь только ты).",
+      "file": "stats.js"
+    },
+    {
+      "id": "tools",
+      "name": "Инструменты",
+      "version": "1.0",
+      "author": "GhostGram",
+      "description": ".qr текст — QR-код картинкой по ссылке. .link url — короткая ссылка. .ip 1.1.1.1 — страна и провайдер IP. .def word — значение английского слова. .b64 / .unb64 — Base64.",
+      "file": "tools.js"
+    },
+    {
       "id": "my-plugin",
       "name": "Мой плагин (шаблон)",
       "version": "1.0",

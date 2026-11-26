@@ -81,6 +81,9 @@ private enum GhostToggle: Int32 {
     case roundRear
     case alwaysHD
     case swapSwipes
+    case hideCameraTile
+    case playerColors
+    case playerLyrics
     case advertiseBadge
     case showBadges
     case hiddenChats
@@ -152,6 +155,9 @@ private enum GhostToggle: Int32 {
         case .roundRear: return "Кружки на заднюю камеру"
         case .alwaysHD: return "Фото всегда в HD"
         case .swapSwipes: return "Поменять свайпы чатов местами"
+        case .hideCameraTile: return "Без плитки камеры в галерее"
+        case .playerColors: return "Плеер в цвет обложки"
+        case .playerLyrics: return "Кнопка текста песни в плеере"
         case .advertiseBadge: return "👻 у моего имени для юзеров GhostGram"
         case .showBadges: return "Показывать 👻 у юзеров GhostGram"
         case .hiddenChats: return "Скрытые чаты"
@@ -225,6 +231,9 @@ private enum GhostToggle: Int32 {
         case .roundRear: return GhostSettings.roundRearCamera
         case .alwaysHD: return GhostSettings.alwaysHDPhotos
         case .swapSwipes: return GhostSettings.swapChatSwipes
+        case .hideCameraTile: return GhostSettings.hideCameraTile
+        case .playerColors: return GhostSettings.playerCoverColors
+        case .playerLyrics: return GhostSettings.playerLyricsButton
         case .advertiseBadge: return GhostSettings.advertiseGhostGram
         case .showBadges: return GhostSettings.showGhostBadges
         case .hiddenChats: return GhostSettings.hiddenChatsEnabled
@@ -299,6 +308,9 @@ private enum GhostToggle: Int32 {
         case .roundRear: pair = ("camera.rotate.fill", .systemOrange)
         case .alwaysHD: pair = ("sparkles.rectangle.stack.fill", .systemBlue)
         case .swapSwipes: pair = ("arrow.left.arrow.right", .systemGreen)
+        case .hideCameraTile: pair = ("camera.fill", .systemGray)
+        case .playerColors: pair = ("paintpalette.fill", .systemPink)
+        case .playerLyrics: pair = ("quote.bubble.fill", .systemPurple)
         case .advertiseBadge: pair = ("person.badge.plus", .systemPurple)
         case .showBadges: pair = ("eye.fill", .systemPurple)
         case .hiddenChats: pair = ("eye.slash.fill", .systemGray)
@@ -373,6 +385,9 @@ private enum GhostToggle: Int32 {
         case .roundRear: GhostSettings.roundRearCamera = value
         case .alwaysHD: GhostSettings.alwaysHDPhotos = value
         case .swapSwipes: GhostSettings.swapChatSwipes = value
+        case .hideCameraTile: GhostSettings.hideCameraTile = value
+        case .playerColors: GhostSettings.playerCoverColors = value
+        case .playerLyrics: GhostSettings.playerLyricsButton = value
         case .advertiseBadge: GhostSettings.advertiseGhostGram = value
         case .showBadges: GhostSettings.showGhostBadges = value
         case .hiddenChats: GhostSettings.hiddenChatsEnabled = value
@@ -515,7 +530,7 @@ private enum GhostPage: Int32, CaseIterable {
         case .messages: return [.keepDeleted, .keepEditHistory, .keepViewOnce, .keepSecret, .notifyOnDelete, .deletedLog]
         case .stickers: return [.stickersWithoutPack, .confirmStickers]
         case .filters: return [.filter]
-        case .media: return [.roundRear, .alwaysHD, .downloadBoost, .autoCache, .autoCachePhotos, .autoCacheVideos, .autoCacheVoice, .autoCacheFiles, .extendedSpeeds]
+        case .media: return [.roundRear, .alwaysHD, .hideCameraTile, .playerColors, .playerLyrics, .downloadBoost, .autoCache, .autoCachePhotos, .autoCacheVideos, .autoCacheVoice, .autoCacheFiles, .extendedSpeeds]
         case .content: return [.bypassCopyProtection, .hideScreenshots, .hideSponsored, .hideStories]
         case .people: return [.profileId, .profileLog]
         case .island: return [.uploadIsland, .dynamicIsland, .islandBadge]
@@ -738,6 +753,11 @@ private func ghostGramSettingsEntries(page: GhostPage?) -> [GhostGramSettingsEnt
         header(2, "КАМЕРА И ФОТО")
         toggle(2, .roundRear)
         toggle(2, .alwaysHD)
+        toggle(2, .hideCameraTile)
+        header(3, "МУЗЫКА")
+        toggle(3, .playerColors)
+        toggle(3, .playerLyrics)
+        footer(3, "Тексты песен берутся из открытой базы LRCLIB. Ещё их можно открыть долгим нажатием на песню в чате → «👻 Ещё».")
     case .content:
         header(0, "КОНТЕНТ")
         toggle(0, .bypassCopyProtection)
