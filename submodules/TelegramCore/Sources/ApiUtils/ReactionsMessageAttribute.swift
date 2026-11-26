@@ -81,6 +81,9 @@ extension ReactionsMessageAttribute {
 }
 
 public func mergedMessageReactionsAndPeers(accountPeerId: EnginePeer.Id, accountPeer: EnginePeer?, message: Message) -> (reactions: [MessageReaction], peers: [(MessageReaction.Reaction, EnginePeer)]) {
+    if GhostSettings.hidesReactions(message: message) && !message.areReactionsTags(accountPeerId: accountPeerId) {
+        return ([], [])
+    }
     guard let attribute = mergedMessageReactions(attributes: message.attributes, isTags: message.areReactionsTags(accountPeerId: accountPeerId)) else {
         return ([], [])
     }

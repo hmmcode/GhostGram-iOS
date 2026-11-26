@@ -1400,6 +1400,34 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
             })))
         }
 
+        if GhostSettings.extraMessageMenu && message.id.namespace == Namespaces.Message.Cloud {
+            if canSendMessagesToChat(chatPresentationInterfaceState) {
+                actions.append(.action(ContextMenuActionItem(text: "Повторить", icon: { theme in
+                    return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Repeat"), color: theme.actionSheet.primaryTextColor) ?? generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Forward"), color: theme.actionSheet.primaryTextColor)
+                }, action: { _, f in
+                    f(.default)
+                    let attributes: [EngineMessage.Attribute] = [ForwardOptionsMessageAttribute(hideNames: true, hideCaptions: false)]
+                    let _ = enqueueMessages(account: context.account, peerId: message.id.peerId, messages: [.forward(source: message.id, threadId: message.threadId, grouping: .auto, attributes: attributes, correlationId: nil)]).startStandalone()
+                })))
+            }
+            if message.id.peerId != context.account.peerId {
+                actions.append(.action(ContextMenuActionItem(text: "В Избранное", icon: { theme in
+                    return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Fave"), color: theme.actionSheet.primaryTextColor) ?? generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Forward"), color: theme.actionSheet.primaryTextColor)
+                }, action: { _, f in
+                    f(.default)
+                    let _ = enqueueMessages(account: context.account, peerId: context.account.peerId, messages: [.forward(source: message.id, threadId: nil, grouping: .auto, attributes: [], correlationId: nil)]).startStandalone()
+                })))
+            }
+            if message.id.peerId.namespace != Namespaces.Peer.CloudUser, let author = message.author {
+                actions.append(.action(ContextMenuActionItem(text: "Сообщения автора", icon: { theme in
+                    return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Search"), color: theme.actionSheet.primaryTextColor)
+                }, action: { _, f in
+                    f(.default)
+                    interfaceInteraction.beginMessageSearch(.member(author), "")
+                })))
+            }
+        }
+
         if GhostSettings.showMessageDetails {
             if !message.text.isEmpty {
                 actions.append(.action(ContextMenuActionItem(text: "Копировать как Markdown", icon: { theme in

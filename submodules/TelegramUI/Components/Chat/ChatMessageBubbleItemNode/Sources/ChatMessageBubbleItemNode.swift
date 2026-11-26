@@ -498,7 +498,7 @@ private func contentNodeMessagesAndClassesForItem(_ item: ChatMessageItem) -> ([
         }
     }
     
-    if !reactionsAreInline && !hideAllAdditionalInfo, let reactionsAttribute = mergedMessageReactions(attributes: firstMessage.attributes, isTags: firstMessage.areReactionsTags(accountPeerId: item.context.account.peerId)), !reactionsAttribute.reactions.isEmpty {
+    if !reactionsAreInline && !hideAllAdditionalInfo, let reactionsAttribute = ghostMergedMessageReactions(message: firstMessage, isTags: firstMessage.areReactionsTags(accountPeerId: item.context.account.peerId)), !reactionsAttribute.reactions.isEmpty {
         if result.last?.1 == ChatMessageTextBubbleContentNode.self {
         } else if item.bubbleStyle == .bubblelessCard && result.last?.1 != ChatMessageCommentFooterContentNode.self {
             // Without bubbles a card keeps its reactions under its outline, as a message without a card does.
@@ -536,7 +536,7 @@ private func contentNodeMessagesAndClassesForItem(_ item: ChatMessageItem) -> ([
     // into a reactions footer above a comments row or after an album of files.
     if item.bubbleStyle.isBubbleless && !reactionsAreInline && !isAction && !hideAllAdditionalInfo {
         let statusReactionClasses: [AnyClass] = [ChatMessageTextBubbleContentNode.self, ChatMessageWebpageBubbleContentNode.self, ChatMessageRichDataBubbleContentNode.self, ChatMessageFactCheckBubbleContentNode.self, ChatMessageFileBubbleContentNode.self, ChatMessageGameBubbleContentNode.self, ChatMessageInvoiceBubbleContentNode.self, ChatMessageRestrictedBubbleContentNode.self]
-        let hasReactions = mergedMessageReactions(attributes: firstMessage.attributes, isTags: firstMessage.areReactionsTags(accountPeerId: item.context.account.peerId))?.reactions.isEmpty == false
+        let hasReactions = ghostMergedMessageReactions(message: firstMessage, isTags: firstMessage.areReactionsTags(accountPeerId: item.context.account.peerId))?.reactions.isEmpty == false
         let endsWithComments = result.last?.1 == ChatMessageCommentFooterContentNode.self
         switch chatMessageBubblelessReactionsPlacement(
             style: item.bubbleStyle,
@@ -2655,7 +2655,7 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
         
         let bubbleReactions: ReactionsMessageAttribute
         if needReactions || forceReactionsOutside {
-            bubbleReactions = mergedMessageReactions(attributes: item.message.attributes, isTags: item.message.areReactionsTags(accountPeerId: item.context.account.peerId)) ?? ReactionsMessageAttribute(canViewList: false, isTags: false, reactions: [], recentPeers: [], topPeers: [])
+            bubbleReactions = ghostMergedMessageReactions(message: item.message, isTags: item.message.areReactionsTags(accountPeerId: item.context.account.peerId)) ?? ReactionsMessageAttribute(canViewList: false, isTags: false, reactions: [], recentPeers: [], topPeers: [])
         } else {
             bubbleReactions = ReactionsMessageAttribute(canViewList: false, isTags: false, reactions: [], recentPeers: [], topPeers: [])
         }
@@ -4461,7 +4461,9 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
         if hideBackground {
             backgroundType = .none
         } else if !incoming {
-            backgroundType = .outgoing(mergeType)
+            backgroundType = GhostSettings.removeMessageTail ? .outgoing(.Extracted) : .outgoing(mergeType)
+        } else if GhostSettings.removeMessageTail {
+            backgroundType = .incoming(.Extracted)
         } else {
             if case let .messageOptions(_, _, info) = item.associatedData.subject, case let .link(link) = info, link.isCentered {
                 backgroundType = .incoming(.Extracted)
@@ -6609,6 +6611,33 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
         super.animateFrameTransition(progress, currentValue)
     }
     
+    /// GhostGram: the double tap action picked in settings. Returns false to fall back to a reaction.
+    private func ghostHandleDoubleTap(_ message: Message, item: ChatMessageItem) -> Bool {
+        switch GhostSettings.doubleTapAction {
+        case 1:
+            item.controllerInteraction.setupReply(message.id)
+            return true
+        case 2:
+            guard !message.text.isEmpty else {
+                return false
+            }
+            UIPasteboard.general.string = message.text
+            HapticFeedback().tap()
+            return true
+        case 3:
+            guard message.id.namespace == Namespaces.Message.Cloud else {
+                return false
+            }
+            let _ = enqueueMessages(account: item.context.account, peerId: item.context.account.peerId, messages: [.forward(source: message.id, threadId: nil, grouping: .auto, attributes: [], correlationId: nil)]).startStandalone()
+            HapticFeedback().success()
+            return true
+        case 4:
+            return true
+        default:
+            return false
+        }
+    }
+
     @objc private func tapLongTapOrDoubleTapGesture(_ recognizer: TapLongTapOrDoubleTapGestureRecognizer) {
         switch recognizer.state {
         case .ended:
@@ -6623,8 +6652,7 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
                     case let .optionalAction(f):
                         f()
                     case let .openContextMenu(openContextMenu):
-                        if GhostSettings.doubleTapReply {
-                            item.controllerInteraction.setupReply(openContextMenu.tapMessage.id)
+                        if self.ghostHandleDoubleTap(openContextMenu.tapMessage, item: item) {
                         } else if canAddMessageReactions(message: EngineMessage(openContextMenu.tapMessage)) {
                             item.controllerInteraction.updateMessageReaction(openContextMenu.tapMessage, .default, false, nil)
                         } else {
@@ -6634,8 +6662,7 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
                 } else if case .tap = gesture {
                     item.controllerInteraction.clickThroughMessage(self.view, location)
                 } else if case .doubleTap = gesture {
-                    if GhostSettings.doubleTapReply {
-                        item.controllerInteraction.setupReply(item.message.id)
+                    if self.ghostHandleDoubleTap(item.message, item: item) {
                     } else if canAddMessageReactions(message: EngineMessage(item.message)) {
                         item.controllerInteraction.updateMessageReaction(item.message, .default, false, nil)
                     }

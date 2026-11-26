@@ -4310,7 +4310,33 @@ public class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDeleg
             self.interfaceInteraction?.updateTextInputStateAndMode({ _, inputMode in return (inputTextState, inputMode) })
             self.interfaceInteraction?.updateInputLanguage({ _ in return self.richTextInputNode?.primaryLanguage })
             self.updateTextNodeText(animated: true)
+            self.ghostCheckInlineCalc(inputTextState)
         }
+    }
+
+    private var ghostCalcPreviousLength = 0
+
+    /// GhostGram: "150*3=" gets the answer appended right after the "=".
+    private func ghostCheckInlineCalc(_ state: ChatTextInputState) {
+        let text = state.inputText.string
+        let length = (text as NSString).length
+        let previousLength = self.ghostCalcPreviousLength
+        self.ghostCalcPreviousLength = length
+        guard GhostSettings.inlineCalculator, length == previousLength + 1, text.hasSuffix("="), state.selectionRange.upperBound == length else {
+            return
+        }
+        GhostInlineCalc.evaluate(text, completion: { [weak self] result in
+            guard let self, let result else {
+                return
+            }
+            let current = self.inputTextState
+            guard current.inputText.string == text else {
+                return
+            }
+            let updated = current.replacingFlatRange(NSRange(location: length, length: 0), with: result)
+            self.ghostCalcPreviousLength = (updated.inputText.string as NSString).length
+            self.interfaceInteraction?.updateTextInputStateAndMode({ _, inputMode in return (updated, inputMode) })
+        })
     }
     
     @objc public func editableTextNodeDidUpdateText(_ editableTextNode: ASEditableTextNode) {

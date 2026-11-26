@@ -258,6 +258,9 @@ public func stringForMessageTimestampStatus(
         }
     }
 
+    if GhostSettings.showForwardsCount, let forwards = message.attributes.first(where: { $0 is ForwardCountMessageAttribute }) as? ForwardCountMessageAttribute, forwards.count > 0 {
+        dateText = "\u{21AA}\u{FE0E}\(compactNumericCountString(forwards.count)) \(dateText)"
+    }
     if message.attributes.contains(where: { $0 is GhostDeletedMessageAttribute }) {
         if GhostSettings.deletedMarkStyle == 1 {
             dateText = "удалено \(dateText)"

@@ -583,6 +583,14 @@ public func stringAndActivityForUserPresence(strings: PresentationStrings, dateT
             } else if difference < 60 * 60 && !expanded {
                 let minutes = difference / 60
                 return (strings.LastSeen_MinutesAgo(minutes), false)
+            } else if GhostSettings.relativeLastSeen && difference < 7 * 24 * 60 * 60 {
+                if difference < 60 * 60 {
+                    return ("был(а) \(difference / 60) мин назад", false)
+                } else if difference < 24 * 60 * 60 {
+                    return ("был(а) \(difference / (60 * 60)) ч назад", false)
+                } else {
+                    return ("был(а) \(difference / (24 * 60 * 60)) дн назад", false)
+                }
             } else {
                 var t: time_t = time_t(statusTimestamp)
                 var timeinfo: tm = tm()

@@ -431,6 +431,10 @@ public class ChatMessageTextBubbleContentNode: ChatMessageBubbleContentNode {
                 if incoming && item.associatedData.isSuspiciousPeer, let entities = messageEntities {
                     messageEntities = entities.filter(\.isShownFromSuspiciousPeer)
                 }
+                if GhostSettings.filterZalgo, let cleaned = ghostStripZalgo(rawText) {
+                    rawText = cleaned
+                    messageEntities = nil
+                }
                 
                 var formattedDateUpdatePeriod: Int32?
                 if let messageEntities {

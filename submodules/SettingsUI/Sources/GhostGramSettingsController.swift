@@ -65,6 +65,18 @@ private enum GhostToggle: Int32 {
     case downloadBoost
     case glassProfile
     case profileV2
+    case localTranscription
+    case inlineCalc
+    case extraMenu
+    case relativeLastSeen
+    case exactNumbers
+    case editedIcon
+    case forwardsCount
+    case noTail
+    case hideReactionsPrivate
+    case hideReactionsGroups
+    case hideReactionsChannels
+    case filterZalgo
     case advertiseBadge
     case showBadges
     case hiddenChats
@@ -121,6 +133,18 @@ private enum GhostToggle: Int32 {
         case .downloadBoost: return "Ускоритель загрузок"
         case .glassProfile: return "Стеклянный профиль"
         case .profileV2: return "Профиль v2 (подарки кружат)"
+        case .localTranscription: return "Голосовые в текст без Premium"
+        case .inlineCalc: return "Калькулятор в поле ввода"
+        case .extraMenu: return "Повторить / В Избранное в меню"
+        case .relativeLastSeen: return "«был 5 ч назад»"
+        case .exactNumbers: return "Точные числа вместо 1.2K"
+        case .editedIcon: return "Значок ✎ вместо «изменено»"
+        case .forwardsCount: return "Число пересылок у постов"
+        case .noTail: return "Сообщения без хвостика"
+        case .hideReactionsPrivate: return "Без реакций в личке"
+        case .hideReactionsGroups: return "Без реакций в группах"
+        case .hideReactionsChannels: return "Без реакций в каналах"
+        case .filterZalgo: return "Чистить «залго»-текст"
         case .advertiseBadge: return "👻 у моего имени для юзеров GhostGram"
         case .showBadges: return "Показывать 👻 у юзеров GhostGram"
         case .hiddenChats: return "Скрытые чаты"
@@ -179,6 +203,18 @@ private enum GhostToggle: Int32 {
         case .downloadBoost: return GhostSettings.downloadBoost
         case .glassProfile: return GhostSettings.glassProfile
         case .profileV2: return GhostSettings.profileV2
+        case .localTranscription: return GhostSettings.localTranscription
+        case .inlineCalc: return GhostSettings.inlineCalculator
+        case .extraMenu: return GhostSettings.extraMessageMenu
+        case .relativeLastSeen: return GhostSettings.relativeLastSeen
+        case .exactNumbers: return GhostSettings.exactNumbers
+        case .editedIcon: return GhostSettings.editedIcon
+        case .forwardsCount: return GhostSettings.showForwardsCount
+        case .noTail: return GhostSettings.removeMessageTail
+        case .hideReactionsPrivate: return GhostSettings.hideReactionsPrivate
+        case .hideReactionsGroups: return GhostSettings.hideReactionsGroups
+        case .hideReactionsChannels: return GhostSettings.hideReactionsChannels
+        case .filterZalgo: return GhostSettings.filterZalgo
         case .advertiseBadge: return GhostSettings.advertiseGhostGram
         case .showBadges: return GhostSettings.showGhostBadges
         case .hiddenChats: return GhostSettings.hiddenChatsEnabled
@@ -238,6 +274,18 @@ private enum GhostToggle: Int32 {
         case .downloadBoost: pair = ("bolt.fill", .systemYellow)
         case .glassProfile: pair = ("sparkles", .systemCyan)
         case .profileV2: pair = ("gift.fill", .systemPink)
+        case .localTranscription: pair = ("waveform", .systemPurple)
+        case .inlineCalc: pair = ("function", .systemOrange)
+        case .extraMenu: pair = ("ellipsis.bubble.fill", .systemBlue)
+        case .relativeLastSeen: pair = ("clock.arrow.circlepath", .systemTeal)
+        case .exactNumbers: pair = ("number", .systemIndigo)
+        case .editedIcon: pair = ("pencil", .systemGray)
+        case .forwardsCount: pair = ("arrowshape.turn.up.right.fill", .systemGreen)
+        case .noTail: pair = ("bubble.left.fill", .systemPink)
+        case .hideReactionsPrivate: pair = ("person.fill", .systemRed)
+        case .hideReactionsGroups: pair = ("person.3.fill", .systemRed)
+        case .hideReactionsChannels: pair = ("megaphone.fill", .systemRed)
+        case .filterZalgo: pair = ("textformat.abc", .systemBrown)
         case .advertiseBadge: pair = ("person.badge.plus", .systemPurple)
         case .showBadges: pair = ("eye.fill", .systemPurple)
         case .hiddenChats: pair = ("eye.slash.fill", .systemGray)
@@ -297,6 +345,18 @@ private enum GhostToggle: Int32 {
         case .downloadBoost: GhostSettings.downloadBoost = value
         case .glassProfile: GhostSettings.glassProfile = value
         case .profileV2: GhostSettings.profileV2 = value
+        case .localTranscription: GhostSettings.localTranscription = value
+        case .inlineCalc: GhostSettings.inlineCalculator = value
+        case .extraMenu: GhostSettings.extraMessageMenu = value
+        case .relativeLastSeen: GhostSettings.relativeLastSeen = value
+        case .exactNumbers: GhostSettings.exactNumbers = value
+        case .editedIcon: GhostSettings.editedIcon = value
+        case .forwardsCount: GhostSettings.showForwardsCount = value
+        case .noTail: GhostSettings.removeMessageTail = value
+        case .hideReactionsPrivate: GhostSettings.hideReactionsPrivate = value
+        case .hideReactionsGroups: GhostSettings.hideReactionsGroups = value
+        case .hideReactionsChannels: GhostSettings.hideReactionsChannels = value
+        case .filterZalgo: GhostSettings.filterZalgo = value
         case .advertiseBadge: GhostSettings.advertiseGhostGram = value
         case .showBadges: GhostSettings.showGhostBadges = value
         case .hiddenChats: GhostSettings.hiddenChatsEnabled = value
@@ -335,6 +395,7 @@ private enum GhostLink: Int32 {
     case importSettings
     case reset
     case automations
+    case doubleTapAction
 
     var icon: UIImage? {
         let pair: (String, UIColor)
@@ -365,6 +426,7 @@ private enum GhostLink: Int32 {
         case .importSettings: pair = ("square.and.arrow.down.fill", .systemGreen)
         case .reset: pair = ("arrow.counterclockwise", .systemRed)
         case .automations: pair = ("bolt.fill", .systemOrange)
+        case .doubleTapAction: pair = ("hand.tap.fill", .systemTeal)
         }
         return ghostSettingsIcon(pair.0, pair.1)
     }
@@ -437,7 +499,7 @@ private enum GhostPage: Int32, CaseIterable {
         case .content: return [.bypassCopyProtection, .hideScreenshots, .hideSponsored, .hideStories]
         case .people: return [.profileId, .profileLog]
         case .island: return [.uploadIsland, .dynamicIsland, .islandBadge]
-        case .interface: return [.hidePhone, .confirmVoice, .confirmCalls, .messageDetails, .notes, .seconds, .doubleTapReply, .noSwipeReply, .noHaptics, .hideNewsTab, .hideBadge, .glassProfile, .profileV2, .showBadges, .advertiseBadge, .minimalTabs]
+        case .interface: return [.hidePhone, .confirmVoice, .confirmCalls, .messageDetails, .notes, .seconds, .noSwipeReply, .noHaptics, .hideNewsTab, .hideBadge, .glassProfile, .profileV2, .showBadges, .advertiseBadge, .minimalTabs, .localTranscription, .inlineCalc, .extraMenu, .relativeLastSeen, .exactNumbers, .editedIcon, .forwardsCount, .noTail, .hideReactionsPrivate, .hideReactionsGroups, .hideReactionsChannels, .filterZalgo]
         case .security: return [.hiddenChats, .panicShake, .hideOnCapture, .protectMenu]
         case .manage: return []
         }
@@ -682,10 +744,20 @@ private func ghostGramSettingsEntries(page: GhostPage?) -> [GhostGramSettingsEnt
     case .interface:
         header(0, "ЧАТЫ")
         toggle(0, .seconds)
-        toggle(0, .doubleTapReply)
+        link(0, .doubleTapAction, "Двойной тап", GhostSettings.doubleTapActionTitles[max(0, min(GhostSettings.doubleTapAction, GhostSettings.doubleTapActionTitles.count - 1))])
         toggle(0, .noSwipeReply)
         toggle(0, .messageDetails)
         toggle(0, .notes)
+        toggle(0, .localTranscription)
+        toggle(0, .inlineCalc)
+        toggle(0, .extraMenu)
+        toggle(0, .relativeLastSeen)
+        toggle(0, .exactNumbers)
+        toggle(0, .editedIcon)
+        toggle(0, .forwardsCount)
+        toggle(0, .noTail)
+        toggle(0, .filterZalgo)
+        footer(0, "Калькулятор: напиши «150*3=», «5 км в милях=», «100 usd=» или «время Токио=» — ответ допишется сам. Курсы валют берутся из открытого источника раз в 12 часов.")
         header(1, "ПОДТВЕРЖДЕНИЯ")
         toggle(1, .confirmVoice)
         toggle(1, .confirmCalls)
@@ -695,6 +767,9 @@ private func ghostGramSettingsEntries(page: GhostPage?) -> [GhostGramSettingsEnt
         toggle(2, .minimalTabs)
         toggle(2, .hideNewsTab)
         toggle(2, .hideBadge)
+        toggle(2, .hideReactionsPrivate)
+        toggle(2, .hideReactionsGroups)
+        toggle(2, .hideReactionsChannels)
         toggle(2, .hidePhone)
         toggle(2, .noHaptics)
         link(2, .amoled, "Включить AMOLED-тему")
@@ -1018,6 +1093,15 @@ private func ghostGramSettingsPage(context: AccountContext, page: GhostPage?) ->
                 ("Чатов с фейковым статусом", "\(GhostSettings.fakeActivities.count)")
             ]
             ghostPushController(controller, ghostInfoListController(context: context, title: "Моя статистика", rows: rows, emptyText: ""))
+        case .doubleTapAction:
+            var options: [(String, () -> Void)] = []
+            for (index, title) in GhostSettings.doubleTapActionTitles.enumerated() {
+                options.append(((index == GhostSettings.doubleTapAction ? "✓ " : "") + title, {
+                    GhostSettings.doubleTapAction = index
+                    changed()
+                }))
+            }
+            ghostChoose(context: context, from: controller, title: "Двойной тап по сообщению", text: "Что делать, когда дважды тапаешь по сообщению.", options: options)
         case .presets:
             ghostChoose(context: context, from: controller, title: "Пресеты", text: "Включают сразу группу настроек. Остальное не трогают.", options: [
                 ("👻 Невидимка", {
