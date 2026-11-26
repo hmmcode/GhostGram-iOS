@@ -167,6 +167,99 @@ public final class PeerInfoGiftsCoverComponent: Component {
             return (distance, base + time * speed)
         }
 
+        // Profile v2: hold a bubble to grab it; it grows, wobbles like soap and
+        // rains the gift pattern inside until it is let go.
+        private var draggingId: AnyHashable?
+        private var orbitHoldUntil: [AnyHashable: Double] = [:]
+        private var dragLastPoint = CGPoint()
+        private var dragLastTime: Double = 0.0
+        private var dragVelocity = CGPoint()
+        private weak var dragDisabledScrollView: UIScrollView?
+
+        @objc private func longPressed(_ gestureRecognizer: UILongPressGestureRecognizer) {
+            let location = gestureRecognizer.location(in: self)
+            switch gestureRecognizer.state {
+            case .began:
+                guard GhostSettings.profileV2, self.orbitFraction < 0.001 else {
+                    return
+                }
+                for (id, iconLayer) in self.iconLayers {
+                    if iconLayer.frame.insetBy(dx: -10.0, dy: -10.0).contains(location) {
+                        self.draggingId = id
+                        break
+                    }
+                }
+                guard let id = self.draggingId, let iconLayer = self.iconLayers[id] else {
+                    return
+                }
+                var current: UIView? = self.superview
+                while let view = current {
+                    if let scrollView = view as? UIScrollView, scrollView.isScrollEnabled {
+                        scrollView.isScrollEnabled = false
+                        self.dragDisabledScrollView = scrollView
+                        break
+                    }
+                    current = view.superview
+                }
+                self.clipsToBounds = false
+                iconLayer.zPosition = 10.0
+                self.dragLastPoint = location
+                self.dragLastTime = CACurrentMediaTime()
+                self.dragVelocity = CGPoint()
+                ComponentTransition.spring(duration: 0.4).setPosition(layer: iconLayer, position: location)
+                ComponentTransition.spring(duration: 0.4).setScale(layer: iconLayer, scale: 2.4)
+                iconLayer.setInteracting(true)
+                HapticFeedback().impact(.light)
+            case .changed:
+                guard let id = self.draggingId, let iconLayer = self.iconLayers[id] else {
+                    return
+                }
+                let now = CACurrentMediaTime()
+                let dt = max(0.001, now - self.dragLastTime)
+                let velocity = CGPoint(x: (location.x - self.dragLastPoint.x) / dt, y: (location.y - self.dragLastPoint.y) / dt)
+                self.dragVelocity = CGPoint(x: self.dragVelocity.x * 0.6 + velocity.x * 0.4, y: self.dragVelocity.y * 0.6 + velocity.y * 0.4)
+                self.dragLastPoint = location
+                self.dragLastTime = now
+                CATransaction.begin()
+                CATransaction.setDisableActions(true)
+                iconLayer.position = location
+                CATransaction.commit()
+                iconLayer.updateStretch(velocity: self.dragVelocity, animated: false)
+            default:
+                guard let id = self.draggingId else {
+                    return
+                }
+                self.draggingId = nil
+                if let scrollView = self.dragDisabledScrollView {
+                    scrollView.isScrollEnabled = true
+                    self.dragDisabledScrollView = nil
+                }
+                guard let iconLayer = self.iconLayers[id] else {
+                    self.clipsToBounds = true
+                    return
+                }
+                iconLayer.setInteracting(false)
+                iconLayer.updateStretch(velocity: CGPoint(), animated: true)
+                let returnDuration = 0.55
+                self.orbitHoldUntil[id] = CACurrentMediaTime() + returnDuration
+                var target = iconLayer.position
+                var scale: CGFloat = 1.0
+                if let item = self.orbitIndices[id] {
+                    let time = CGFloat(CACurrentMediaTime() + returnDuration - self.orbitStart)
+                    let orbit = self.orbitAngle(index: item.index, count: item.count, time: time)
+                    target = getAbsolutePosition(distance: orbit.distance, angle: orbit.angle, centerPoint: self.orbitCenter)
+                    scale = item.scale
+                }
+                ComponentTransition.spring(duration: returnDuration).setPosition(layer: iconLayer, position: target)
+                ComponentTransition.spring(duration: returnDuration).setScale(layer: iconLayer, scale: scale, completion: { [weak self, weak iconLayer] _ in
+                    iconLayer?.zPosition = 0.0
+                    if let self, self.draggingId == nil {
+                        self.clipsToBounds = true
+                    }
+                })
+            }
+        }
+
         fileprivate func orbitTick() {
             guard self.orbitFraction < 0.001, !self.orbitIndices.isEmpty else {
                 return
@@ -174,8 +267,15 @@ public final class PeerInfoGiftsCoverComponent: Component {
             let time = CGFloat(CACurrentMediaTime() - self.orbitStart)
             CATransaction.begin()
             CATransaction.setDisableActions(true)
+            let now = CACurrentMediaTime()
             for (id, iconLayer) in self.iconLayers {
                 guard let item = self.orbitIndices[id] else {
+                    continue
+                }
+                if let draggingId = self.draggingId, draggingId == id {
+                    continue
+                }
+                if let holdUntil = self.orbitHoldUntil[id], holdUntil > now {
                     continue
                 }
                 let orbit = self.orbitAngle(index: item.index, count: item.count, time: time)
@@ -221,7 +321,13 @@ public final class PeerInfoGiftsCoverComponent: Component {
                 self.updateOrbitLink()
             }
             
-            self.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(self.tapped(_:))))
+            let tapRecognizer = UITapGestureRecognizer(target: self, action: #selector(self.tapped(_:)))
+            let longPressRecognizer = UILongPressGestureRecognizer(target: self, action: #selector(self.longPressed(_:)))
+            longPressRecognizer.minimumPressDuration = 0.18
+            longPressRecognizer.allowableMovement = .greatestFiniteMagnitude
+            tapRecognizer.require(toFail: longPressRecognizer)
+            self.addGestureRecognizer(longPressRecognizer)
+            self.addGestureRecognizer(tapRecognizer)
         }
         
         required public init?(coder aDecoder: NSCoder) {
@@ -473,6 +579,10 @@ public final class PeerInfoGiftsCoverComponent: Component {
                     iconLayer.startAnimations(index: index)
                 }
                 iconLayer.glowing = component.hasBackground
+                if let draggingId = self.draggingId, draggingId == id {
+                    index += 1
+                    continue
+                }
                 
                 let itemDistanceFraction = max(0.0, min(0.5, (iconPosition.distance - component.avatarSize.width / 2.0) / 144.0))
                 let itemScaleFraction = patternScaleValueAt(fraction: min(1.0, component.avatarTransitionFraction * 1.33), t: itemDistanceFraction, reverse: false)
@@ -672,6 +782,16 @@ private class GiftIconLayer: SimpleLayer {
         self.bubbleTintLayer.startPoint = CGPoint(x: 0.2, y: 0.0)
         self.bubbleTintLayer.endPoint = CGPoint(x: 0.8, y: 1.0)
         self.bubbleLayer.addSublayer(self.bubbleTintLayer)
+        self.bubbleLayer.addSublayer(self.particleContainer)
+        if case let .unique(uniqueGift) = self.gift.gift {
+            for attribute in uniqueGift.attributes {
+                if case let .pattern(_, file, _) = attribute {
+                    self.patternFile = file
+                } else if case let .backdrop(_, _, _, _, patternColor, _, _) = attribute {
+                    self.patternColor = UIColor(rgb: UInt32(bitPattern: patternColor))
+                }
+            }
+        }
         self.bubbleLayer.borderWidth = 1.0
         self.bubbleLayer.borderColor = UIColor(white: 1.0, alpha: 0.45).cgColor
         self.bubbleLayer.masksToBounds = true
@@ -683,6 +803,104 @@ private class GiftIconLayer: SimpleLayer {
         self.bubbleLayer.addSublayer(self.bubbleShineLayer)
         self.shadowLayer.isHidden = true
         self.insertSublayer(self.bubbleLayer, at: 0)
+        self.addWobble()
+    }
+
+    private let particleContainer = SimpleLayer()
+    private var patternFile: TelegramMediaFile?
+    private var patternColor: UIColor = .white
+    private var particleTimer: Foundation.Timer?
+
+    /// Soap-bubble breathing: the bubble keeps squashing a little along both axes.
+    private func addWobble() {
+        let duration = Double.random(in: 1.6 ..< 2.2)
+        let begin = CACurrentMediaTime() + Double.random(in: 0.0 ..< 1.0)
+        for (keyPath, sign) in [("transform.scale.x", 1.0), ("transform.scale.y", -1.0)] {
+            let animation = CAKeyframeAnimation(keyPath: keyPath)
+            animation.values = [0.0, 0.045 * sign, 0.0, -0.045 * sign, 0.0].map { NSNumber(value: $0) }
+            animation.duration = duration
+            animation.repeatCount = .infinity
+            animation.isAdditive = true
+            animation.beginTime = begin
+            animation.calculationMode = .cubic
+            self.bubbleLayer.add(animation, forKey: "ghost.wobble." + keyPath)
+        }
+    }
+
+    /// Stretches the bubble along the drag direction; on release it springs back like jelly.
+    func updateStretch(velocity: CGPoint, animated: Bool) {
+        let speed = sqrt(velocity.x * velocity.x + velocity.y * velocity.y)
+        let amount = min(0.32, speed / 2600.0)
+        var transform = CATransform3DIdentity
+        if amount > 0.01 {
+            let angle = atan2(velocity.y, velocity.x)
+            transform = CATransform3DMakeRotation(angle, 0.0, 0.0, 1.0)
+            transform = CATransform3DScale(transform, 1.0 + amount, 1.0 - amount * 0.75, 1.0)
+            transform = CATransform3DRotate(transform, -angle, 0.0, 0.0, 1.0)
+        }
+        if animated {
+            let previous = self.bubbleLayer.presentation()?.transform ?? self.bubbleLayer.transform
+            let animation = CASpringAnimation(keyPath: "transform")
+            animation.fromValue = NSValue(caTransform3D: previous)
+            animation.toValue = NSValue(caTransform3D: transform)
+            animation.mass = 1.0
+            animation.stiffness = 260.0
+            animation.damping = 9.0
+            animation.duration = animation.settlingDuration
+            self.bubbleLayer.add(animation, forKey: "ghost.stretch")
+        }
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        self.bubbleLayer.transform = transform
+        CATransaction.commit()
+    }
+
+    /// While held, small copies of the gift pattern fall through the bubble.
+    func setInteracting(_ value: Bool) {
+        self.particleTimer?.invalidate()
+        self.particleTimer = nil
+        if value {
+            self.spawnParticle()
+            let timer = Foundation.Timer(timeInterval: 0.11, repeats: true, block: { [weak self] _ in
+                self?.spawnParticle()
+            })
+            RunLoop.main.add(timer, forMode: .common)
+            self.particleTimer = timer
+        }
+    }
+
+    private func spawnParticle() {
+        guard let file = self.patternFile else {
+            return
+        }
+        let bounds = self.particleContainer.bounds
+        guard bounds.width > 1.0 else {
+            return
+        }
+        let side = CGFloat.random(in: 5.0 ..< 9.0)
+        let particle = InlineStickerItemLayer(
+            context: .account(self.context),
+            userLocation: .other,
+            attemptSynchronousLoad: false,
+            emoji: ChatTextInputTextCustomEmojiAttribute(interactivelySelectedFromPackId: nil, fileId: file.fileId.id, file: file),
+            file: file,
+            cache: self.context.animationCache,
+            renderer: self.context.animationRenderer,
+            unique: false,
+            placeholderColor: .clear,
+            pointSize: CGSize(width: 24.0, height: 24.0),
+            dynamicColor: self.patternColor.withAlphaComponent(0.85)
+        )
+        let x = CGFloat.random(in: side ..< max(side + 1.0, bounds.width - side))
+        let from = CGPoint(x: x, y: -side)
+        let to = CGPoint(x: x + CGFloat.random(in: -6.0 ..< 6.0), y: bounds.height + side)
+        particle.bounds = CGRect(origin: .zero, size: CGSize(width: side, height: side))
+        particle.position = to
+        particle.transform = CATransform3DMakeRotation(CGFloat.random(in: -0.6 ..< 0.6), 0.0, 0.0, 1.0)
+        self.particleContainer.addSublayer(particle)
+        particle.animatePosition(from: from, to: to, duration: Double.random(in: 0.9 ..< 1.4), timingFunction: CAMediaTimingFunctionName.easeIn.rawValue, removeOnCompletion: false, completion: { [weak particle] _ in
+            particle?.removeFromSuperlayer()
+        })
     }
     
     override init(layer: Any) {
@@ -823,6 +1041,7 @@ private class GiftIconLayer: SimpleLayer {
         self.bubbleLayer.cornerRadius = bubbleFrame.width / 2.0
         self.bubbleShineLayer.frame = CGRect(origin: .zero, size: bubbleFrame.size)
         self.bubbleTintLayer.frame = CGRect(origin: .zero, size: bubbleFrame.size)
+        self.particleContainer.frame = CGRect(origin: .zero, size: bubbleFrame.size)
         self.bubbleBackdropLayer?.frame = CGRect(origin: .zero, size: bubbleFrame.size)
         self.animationLayer.bounds = CGRect(origin: .zero, size: self.bounds.size)
         self.animationLayer.position = CGPoint(x: self.bounds.width / 2.0, y: self.bounds.height / 2.0)

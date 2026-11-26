@@ -2563,7 +2563,7 @@ final class PeerInfoHeaderNode: ASDisplayNode {
                 } else {
                     transition.updateFrame(view: giftsCoverView, frame: CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: giftsCoverSize))
                 }
-                navigationTransition.updateAlpha(layer: giftsCoverView.layer, alpha: backgroundBannerAlpha)
+                navigationTransition.updateAlpha(layer: giftsCoverView.layer, alpha: (GhostSettings.profileV2 && self.isAvatarExpanded) ? 0.0 : backgroundBannerAlpha)
                 if backgroundCoverAnimateIn {
                     if !self.isAvatarExpanded {
                         giftsCoverView.willAnimateIn()
