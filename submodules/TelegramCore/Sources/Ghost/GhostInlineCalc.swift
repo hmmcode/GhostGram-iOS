@@ -231,34 +231,34 @@ public enum GhostInlineCalc {
 
     private static func unit(_ raw: String) -> UnitInfo? {
         let s = raw.trimmingCharacters(in: CharacterSet(charactersIn: ". ")).replacingOccurrences(of: "°", with: "")
-        func any(_ exact: [String], _ prefixes: [String]) -> Bool {
+        func matches(_ exact: [String], _ prefixes: [String]) -> Bool {
             if exact.contains(s) {
                 return true
             }
             return prefixes.contains(where: { s.hasPrefix($0) })
         }
-        if any(["км/ч", "kmh", "kph", "km/h"], []) { return UnitInfo(dimension: .speed, factor: 1.0 / 3.6, name: "км/ч") }
-        if any(["mph", "миль/ч"], []) { return UnitInfo(dimension: .speed, factor: 0.44704, name: "mph") }
-        if any(["м/с", "m/s"], []) { return UnitInfo(dimension: .speed, factor: 1.0, name: "м/с") }
-        if any(["km", "км"], ["килом"]) { return UnitInfo(dimension: .length, factor: 1000.0, name: "км") }
-        if any(["cm", "см"], ["сантим"]) { return UnitInfo(dimension: .length, factor: 0.01, name: "см") }
-        if any(["mm", "мм"], ["миллим"]) { return UnitInfo(dimension: .length, factor: 0.001, name: "мм") }
-        if any(["ml", "мл"], ["миллил"]) { return UnitInfo(dimension: .volume, factor: 0.001, name: "мл") }
-        if any(["mi", "mile", "miles"], ["мил"]) { return UnitInfo(dimension: .length, factor: 1609.344, name: "миль") }
-        if any(["m", "м"], ["метр"]) { return UnitInfo(dimension: .length, factor: 1.0, name: "м") }
-        if any(["ft", "foot", "feet"], ["фут"]) { return UnitInfo(dimension: .length, factor: 0.3048, name: "фт") }
-        if any(["inch", "inches"], ["дюйм"]) { return UnitInfo(dimension: .length, factor: 0.0254, name: "дюйм") }
-        if any(["yd", "yard", "yards"], ["ярд"]) { return UnitInfo(dimension: .length, factor: 0.9144, name: "ярд") }
-        if any(["kg", "кг"], ["килог"]) { return UnitInfo(dimension: .mass, factor: 1.0, name: "кг") }
-        if any(["g", "г", "gram", "grams"], ["грам"]) { return UnitInfo(dimension: .mass, factor: 0.001, name: "г") }
-        if any(["lb", "lbs", "pound", "pounds"], ["фунт"]) { return UnitInfo(dimension: .mass, factor: 0.45359237, name: "фунт") }
-        if any(["oz", "ounce", "ounces"], ["унци"]) { return UnitInfo(dimension: .mass, factor: 0.028349523125, name: "унц") }
-        if any(["t", "т", "ton", "tons"], ["тонн"]) { return UnitInfo(dimension: .mass, factor: 1000.0, name: "т") }
-        if any(["l", "л"], ["литр"]) { return UnitInfo(dimension: .volume, factor: 1.0, name: "л") }
-        if any(["gal", "gallon", "gallons"], ["галлон"]) { return UnitInfo(dimension: .volume, factor: 3.785411784, name: "гал") }
-        if any(["c", "с"], ["цельс", "celsius"]) { return UnitInfo(dimension: .temperature, factor: 0.0, name: "°C") }
-        if any(["f"], ["фаренг", "fahrenheit"]) { return UnitInfo(dimension: .temperature, factor: 1.0, name: "°F") }
-        if any(["k"], ["кельв", "kelvin"]) { return UnitInfo(dimension: .temperature, factor: 2.0, name: "K") }
+        if matches(["км/ч", "kmh", "kph", "km/h"], []) { return UnitInfo(dimension: .speed, factor: 1.0 / 3.6, name: "км/ч") }
+        if matches(["mph", "миль/ч"], []) { return UnitInfo(dimension: .speed, factor: 0.44704, name: "mph") }
+        if matches(["м/с", "m/s"], []) { return UnitInfo(dimension: .speed, factor: 1.0, name: "м/с") }
+        if matches(["km", "км"], ["килом"]) { return UnitInfo(dimension: .length, factor: 1000.0, name: "км") }
+        if matches(["cm", "см"], ["сантим"]) { return UnitInfo(dimension: .length, factor: 0.01, name: "см") }
+        if matches(["mm", "мм"], ["миллим"]) { return UnitInfo(dimension: .length, factor: 0.001, name: "мм") }
+        if matches(["ml", "мл"], ["миллил"]) { return UnitInfo(dimension: .volume, factor: 0.001, name: "мл") }
+        if matches(["mi", "mile", "miles"], ["мил"]) { return UnitInfo(dimension: .length, factor: 1609.344, name: "миль") }
+        if matches(["m", "м"], ["метр"]) { return UnitInfo(dimension: .length, factor: 1.0, name: "м") }
+        if matches(["ft", "foot", "feet"], ["фут"]) { return UnitInfo(dimension: .length, factor: 0.3048, name: "фт") }
+        if matches(["inch", "inches"], ["дюйм"]) { return UnitInfo(dimension: .length, factor: 0.0254, name: "дюйм") }
+        if matches(["yd", "yard", "yards"], ["ярд"]) { return UnitInfo(dimension: .length, factor: 0.9144, name: "ярд") }
+        if matches(["kg", "кг"], ["килог"]) { return UnitInfo(dimension: .mass, factor: 1.0, name: "кг") }
+        if matches(["g", "г", "gram", "grams"], ["грам"]) { return UnitInfo(dimension: .mass, factor: 0.001, name: "г") }
+        if matches(["lb", "lbs", "pound", "pounds"], ["фунт"]) { return UnitInfo(dimension: .mass, factor: 0.45359237, name: "фунт") }
+        if matches(["oz", "ounce", "ounces"], ["унци"]) { return UnitInfo(dimension: .mass, factor: 0.028349523125, name: "унц") }
+        if matches(["t", "т", "ton", "tons"], ["тонн"]) { return UnitInfo(dimension: .mass, factor: 1000.0, name: "т") }
+        if matches(["l", "л"], ["литр"]) { return UnitInfo(dimension: .volume, factor: 1.0, name: "л") }
+        if matches(["gal", "gallon", "gallons"], ["галлон"]) { return UnitInfo(dimension: .volume, factor: 3.785411784, name: "гал") }
+        if matches(["c", "с"], ["цельс", "celsius"]) { return UnitInfo(dimension: .temperature, factor: 0.0, name: "°C") }
+        if matches(["f"], ["фаренг", "fahrenheit"]) { return UnitInfo(dimension: .temperature, factor: 1.0, name: "°F") }
+        if matches(["k"], ["кельв", "kelvin"]) { return UnitInfo(dimension: .temperature, factor: 2.0, name: "K") }
         return nil
     }
 

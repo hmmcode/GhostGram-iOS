@@ -1442,7 +1442,7 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
             }
             actions.append(.action(ContextMenuActionItem(text: "👻 Ещё", icon: { theme in
                 return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/More"), color: theme.actionSheet.primaryTextColor)
-            }, action: { [weak messageNode] c, _ in
+            }, action: { c, _ in
                 var subItems: [ContextMenuItem] = []
                 subItems.append(.action(ContextMenuActionItem(text: "Назад", icon: { theme in
                     return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Back"), color: theme.actionSheet.primaryTextColor)

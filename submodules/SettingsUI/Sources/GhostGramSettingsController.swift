@@ -1194,7 +1194,7 @@ private func ghostGramSettingsPage(context: AccountContext, page: GhostPage?) ->
                 ghostSettingsTopViewController()?.present(activity, animated: true, completion: nil)
             }
         case .importFile:
-            GhostSettingsFilePicker.shared.pick(completion: { [weak controller] text in
+            GhostSettingsFilePicker.shared.pick(completion: { text in
                 let count = GhostSettings.importJSON(text)
                 changed()
                 ghostInform(context: context, from: controller, title: count > 0 ? "Готово" : "Не получилось", text: count > 0 ? "Восстановлено настроек: \(count)." : "В файле нет настроек GhostGram.")
