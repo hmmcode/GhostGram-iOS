@@ -1,6 +1,5 @@
 import Foundation
 import UIKit
-import Postbox
 import TelegramCore
 import SwiftSignalKit
 import AccountContext
@@ -261,39 +260,6 @@ func ghostShowLyrics(title: String, performer: String, duration: Int) {
 
 // MARK: - Chat export
 
-private func ghostMediaLabel(_ message: Message) -> String? {
-    for media in message.media {
-        if media is TelegramMediaImage {
-            return "фото"
-        }
-        if let file = media as? TelegramMediaFile {
-            if file.isVoice {
-                return "голосовое"
-            } else if file.isInstantVideo {
-                return "кружок"
-            } else if file.isMusic {
-                return "музыка"
-            } else if file.isVideo {
-                return "видео"
-            } else if file.isSticker || file.isAnimatedSticker {
-                return "стикер"
-            } else {
-                return "файл"
-            }
-        }
-        if media is TelegramMediaMap {
-            return "геопозиция"
-        }
-        if media is TelegramMediaContact {
-            return "контакт"
-        }
-        if media is TelegramMediaPoll {
-            return "опрос"
-        }
-    }
-    return nil
-}
-
 private func ghostHTMLEscape(_ text: String) -> String {
     return text
         .replacingOccurrences(of: "&", with: "&amp;")
@@ -303,17 +269,9 @@ private func ghostHTMLEscape(_ text: String) -> String {
 }
 
 /// Writes the messages of a chat that are on this phone into an HTML or JSON file and opens the share sheet.
-func ghostExportChat(context: AccountContext, peerId: PeerId, title: String, json: Bool) {
-    let _ = (context.account.postbox.transaction { transaction -> [Message] in
-        var result: [Message] = []
-        transaction.scanTopMessages(peerId: peerId, namespace: Namespaces.Message.Cloud, limit: 20000, { message in
-            result.append(message)
-            return true
-        })
-        return result
-    }
-    |> deliverOn(Queue.concurrentDefaultQueue())).startStandalone(next: { messages in
-        let ordered = messages.sorted(by: { $0.index < $1.index })
+func ghostExportChat(context: AccountContext, peerId: EnginePeer.Id, title: String, json: Bool) {
+    let _ = (ghostLoadChatForExport(account: context.account, peerId: peerId, limit: 20000)
+    |> deliverOn(Queue.concurrentDefaultQueue())).startStandalone(next: { ordered in
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "dd.MM.yyyy HH:mm:ss"
         let safeTitle = String(title.unicodeScalars.filter { CharacterSet.alphanumerics.contains($0) || $0 == " " }.map(Character.init)).trimmingCharacters(in: .whitespaces)
@@ -324,15 +282,17 @@ func ghostExportChat(context: AccountContext, peerId: PeerId, title: String, jso
             var list: [[String: Any]] = []
             for message in ordered {
                 var entry: [String: Any] = [
-                    "id": Int(message.id.id),
+                    "id": Int(message.id),
                     "date": dateFormatter.string(from: Date(timeIntervalSince1970: Double(message.timestamp))),
                     "text": message.text
                 ]
                 if let author = message.author {
-                    entry["from"] = author.debugDisplayTitle
-                    entry["from_id"] = author.id.id._internalGetInt64Value()
+                    entry["from"] = author
                 }
-                if let media = ghostMediaLabel(message) {
+                if let authorId = message.authorId {
+                    entry["from_id"] = authorId
+                }
+                if let media = message.media {
                     entry["media"] = media
                 }
                 list.append(entry)
@@ -344,9 +304,9 @@ func ghostExportChat(context: AccountContext, peerId: PeerId, title: String, jso
             html += "<style>body{margin:0;background:#151722;color:#e7e8ee;font:15px -apple-system,Segoe UI,sans-serif}main{max-width:720px;margin:0 auto;padding:20px}h1{font-size:20px}.m{background:#ffffff10;border-radius:14px;padding:10px 12px;margin:8px 0}.h{color:#a9b0ff;font-weight:600;font-size:13px}.d{color:#7c8191;font-size:12px;margin-left:6px;font-weight:400}.media{color:#9ca1b4;font-style:italic}</style></head><body><main>"
             html += "<h1>\(ghostHTMLEscape(title))</h1><p class=\"d\">Сообщений: \(ordered.count) · экспорт GhostGram</p>"
             for message in ordered {
-                let author = message.author?.debugDisplayTitle ?? title
+                let author = message.author ?? title
                 html += "<div class=\"m\"><div class=\"h\">\(ghostHTMLEscape(author))<span class=\"d\">\(dateFormatter.string(from: Date(timeIntervalSince1970: Double(message.timestamp))))</span></div>"
-                if let media = ghostMediaLabel(message) {
+                if let media = message.media {
                     html += "<div class=\"media\">[\(media)]</div>"
                 }
                 if !message.text.isEmpty {
