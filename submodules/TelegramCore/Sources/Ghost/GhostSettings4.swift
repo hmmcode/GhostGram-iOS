@@ -98,6 +98,24 @@ public extension GhostSettings {
         set { store4.set(newValue, forKey: "ghost.filterZalgo") }
     }
 
+    /// Round video messages start with the back camera.
+    static var roundRearCamera: Bool {
+        get { return flag4("ghost.roundRear", false) }
+        set { store4.set(newValue, forKey: "ghost.roundRear") }
+    }
+
+    /// Photos from the gallery are always sent in HD.
+    static var alwaysHDPhotos: Bool {
+        get { return flag4("ghost.alwaysHD", false) }
+        set { store4.set(newValue, forKey: "ghost.alwaysHD") }
+    }
+
+    /// Swipe actions in the chat list trade sides.
+    static var swapChatSwipes: Bool {
+        get { return flag4("ghost.swapSwipes", false) }
+        set { store4.set(newValue, forKey: "ghost.swapSwipes") }
+    }
+
     static func hidesReactions(message: Message) -> Bool {
         if !hideReactionsPrivate && !hideReactionsGroups && !hideReactionsChannels {
             return false

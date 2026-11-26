@@ -5708,7 +5708,7 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
                     if item.editing {
                         strongSelf.setRevealOptions((left: [], right: []), enableAnimations: item.context.sharedContext.energyUsageSettings.fullTranslucency)
                     } else {
-                        strongSelf.setRevealOptions((left: peerLeftRevealOptions, right: peerRevealOptions), enableAnimations: item.context.sharedContext.energyUsageSettings.fullTranslucency)
+                        strongSelf.setRevealOptions(GhostSettings.swapChatSwipes ? (left: peerRevealOptions, right: peerLeftRevealOptions) : (left: peerLeftRevealOptions, right: peerRevealOptions), enableAnimations: item.context.sharedContext.energyUsageSettings.fullTranslucency)
                     }
                     if !strongSelf.customAnimationInProgress {
                         strongSelf.setRevealOptionsOpened(item.hasActiveRevealControls, animated: true)

@@ -1428,6 +1428,67 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
             }
         }
 
+        if GhostSettings.extraMessageMenu {
+            let ghostChatTitle = message.peers[message.id.peerId]?.debugDisplayTitle ?? "Чат"
+            var ghostSong: (title: String, performer: String, duration: Int)?
+            for media in message.media {
+                if let file = media as? TelegramMediaFile, file.isMusic {
+                    for attribute in file.attributes {
+                        if case let .Audio(_, duration, title, performer, _) = attribute {
+                            ghostSong = (title ?? file.fileName ?? "", performer ?? "", duration)
+                        }
+                    }
+                }
+            }
+            actions.append(.action(ContextMenuActionItem(text: "👻 Ещё", icon: { theme in
+                return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/More"), color: theme.actionSheet.primaryTextColor)
+            }, action: { [weak messageNode] c, _ in
+                var subItems: [ContextMenuItem] = []
+                subItems.append(.action(ContextMenuActionItem(text: "Назад", icon: { theme in
+                    return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Back"), color: theme.actionSheet.primaryTextColor)
+                }, iconPosition: .left, action: { c, _ in
+                    c?.popItems()
+                })))
+                subItems.append(.separator)
+                if let messageNode = messageNode {
+                    subItems.append(.action(ContextMenuActionItem(text: "Скриншот сообщения", icon: { theme in
+                        return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Image"), color: theme.actionSheet.primaryTextColor) ?? generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Share"), color: theme.actionSheet.primaryTextColor)
+                    }, action: { c, _ in
+                        let image = ghostMessageScreenshot(view: messageNode.view)
+                        c?.dismiss(completion: {
+                            if let image = image {
+                                ghostShare([image])
+                            }
+                        })
+                    })))
+                }
+                if let song = ghostSong, !song.title.isEmpty {
+                    subItems.append(.action(ContextMenuActionItem(text: "Текст песни", icon: { theme in
+                        return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Copy"), color: theme.actionSheet.primaryTextColor)
+                    }, action: { c, _ in
+                        c?.dismiss(completion: {
+                            ghostShowLyrics(title: song.title, performer: song.performer, duration: song.duration)
+                        })
+                    })))
+                }
+                subItems.append(.action(ContextMenuActionItem(text: "Экспорт чата (HTML)", icon: { theme in
+                    return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Share"), color: theme.actionSheet.primaryTextColor)
+                }, action: { c, _ in
+                    c?.dismiss(completion: {
+                        ghostExportChat(context: context, peerId: message.id.peerId, title: ghostChatTitle, json: false)
+                    })
+                })))
+                subItems.append(.action(ContextMenuActionItem(text: "Экспорт чата (JSON)", icon: { theme in
+                    return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Share"), color: theme.actionSheet.primaryTextColor)
+                }, action: { c, _ in
+                    c?.dismiss(completion: {
+                        ghostExportChat(context: context, peerId: message.id.peerId, title: ghostChatTitle, json: true)
+                    })
+                })))
+                c?.pushItems(items: .single(ContextController.Items(content: .list(subItems))))
+            })))
+        }
+
         if GhostSettings.showMessageDetails {
             if !message.text.isEmpty {
                 actions.append(.action(ContextMenuActionItem(text: "Копировать как Markdown", icon: { theme in

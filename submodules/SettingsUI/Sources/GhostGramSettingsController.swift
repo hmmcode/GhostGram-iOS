@@ -12,6 +12,7 @@ import LocalizedPeerData
 import LocalAuthentication
 import PromptUI
 import TelegramUIPreferences
+import UniformTypeIdentifiers
 
 /// Posted after any GhostGram option changes (the Dynamic Island and panic mode listen for it).
 public let ghostGramSettingsChangedNotification = Notification.Name("GhostGramSettingsChanged")
@@ -77,6 +78,9 @@ private enum GhostToggle: Int32 {
     case hideReactionsGroups
     case hideReactionsChannels
     case filterZalgo
+    case roundRear
+    case alwaysHD
+    case swapSwipes
     case advertiseBadge
     case showBadges
     case hiddenChats
@@ -145,6 +149,9 @@ private enum GhostToggle: Int32 {
         case .hideReactionsGroups: return "Без реакций в группах"
         case .hideReactionsChannels: return "Без реакций в каналах"
         case .filterZalgo: return "Чистить «залго»-текст"
+        case .roundRear: return "Кружки на заднюю камеру"
+        case .alwaysHD: return "Фото всегда в HD"
+        case .swapSwipes: return "Поменять свайпы чатов местами"
         case .advertiseBadge: return "👻 у моего имени для юзеров GhostGram"
         case .showBadges: return "Показывать 👻 у юзеров GhostGram"
         case .hiddenChats: return "Скрытые чаты"
@@ -215,6 +222,9 @@ private enum GhostToggle: Int32 {
         case .hideReactionsGroups: return GhostSettings.hideReactionsGroups
         case .hideReactionsChannels: return GhostSettings.hideReactionsChannels
         case .filterZalgo: return GhostSettings.filterZalgo
+        case .roundRear: return GhostSettings.roundRearCamera
+        case .alwaysHD: return GhostSettings.alwaysHDPhotos
+        case .swapSwipes: return GhostSettings.swapChatSwipes
         case .advertiseBadge: return GhostSettings.advertiseGhostGram
         case .showBadges: return GhostSettings.showGhostBadges
         case .hiddenChats: return GhostSettings.hiddenChatsEnabled
@@ -286,6 +296,9 @@ private enum GhostToggle: Int32 {
         case .hideReactionsGroups: pair = ("person.3.fill", .systemRed)
         case .hideReactionsChannels: pair = ("megaphone.fill", .systemRed)
         case .filterZalgo: pair = ("textformat.abc", .systemBrown)
+        case .roundRear: pair = ("camera.rotate.fill", .systemOrange)
+        case .alwaysHD: pair = ("sparkles.rectangle.stack.fill", .systemBlue)
+        case .swapSwipes: pair = ("arrow.left.arrow.right", .systemGreen)
         case .advertiseBadge: pair = ("person.badge.plus", .systemPurple)
         case .showBadges: pair = ("eye.fill", .systemPurple)
         case .hiddenChats: pair = ("eye.slash.fill", .systemGray)
@@ -357,6 +370,9 @@ private enum GhostToggle: Int32 {
         case .hideReactionsGroups: GhostSettings.hideReactionsGroups = value
         case .hideReactionsChannels: GhostSettings.hideReactionsChannels = value
         case .filterZalgo: GhostSettings.filterZalgo = value
+        case .roundRear: GhostSettings.roundRearCamera = value
+        case .alwaysHD: GhostSettings.alwaysHDPhotos = value
+        case .swapSwipes: GhostSettings.swapChatSwipes = value
         case .advertiseBadge: GhostSettings.advertiseGhostGram = value
         case .showBadges: GhostSettings.showGhostBadges = value
         case .hiddenChats: GhostSettings.hiddenChatsEnabled = value
@@ -396,6 +412,8 @@ private enum GhostLink: Int32 {
     case reset
     case automations
     case doubleTapAction
+    case exportFile
+    case importFile
 
     var icon: UIImage? {
         let pair: (String, UIColor)
@@ -427,6 +445,8 @@ private enum GhostLink: Int32 {
         case .reset: pair = ("arrow.counterclockwise", .systemRed)
         case .automations: pair = ("bolt.fill", .systemOrange)
         case .doubleTapAction: pair = ("hand.tap.fill", .systemTeal)
+        case .exportFile: pair = ("doc.badge.arrow.up.fill", .systemBlue)
+        case .importFile: pair = ("doc.badge.plus", .systemGreen)
         }
         return ghostSettingsIcon(pair.0, pair.1)
     }
@@ -495,11 +515,11 @@ private enum GhostPage: Int32, CaseIterable {
         case .messages: return [.keepDeleted, .keepEditHistory, .keepViewOnce, .keepSecret, .notifyOnDelete, .deletedLog]
         case .stickers: return [.stickersWithoutPack, .confirmStickers]
         case .filters: return [.filter]
-        case .media: return [.downloadBoost, .autoCache, .autoCachePhotos, .autoCacheVideos, .autoCacheVoice, .autoCacheFiles, .extendedSpeeds]
+        case .media: return [.roundRear, .alwaysHD, .downloadBoost, .autoCache, .autoCachePhotos, .autoCacheVideos, .autoCacheVoice, .autoCacheFiles, .extendedSpeeds]
         case .content: return [.bypassCopyProtection, .hideScreenshots, .hideSponsored, .hideStories]
         case .people: return [.profileId, .profileLog]
         case .island: return [.uploadIsland, .dynamicIsland, .islandBadge]
-        case .interface: return [.hidePhone, .confirmVoice, .confirmCalls, .messageDetails, .notes, .seconds, .noSwipeReply, .noHaptics, .hideNewsTab, .hideBadge, .glassProfile, .profileV2, .showBadges, .advertiseBadge, .minimalTabs, .localTranscription, .inlineCalc, .extraMenu, .relativeLastSeen, .exactNumbers, .editedIcon, .forwardsCount, .noTail, .hideReactionsPrivate, .hideReactionsGroups, .hideReactionsChannels, .filterZalgo]
+        case .interface: return [.hidePhone, .confirmVoice, .confirmCalls, .messageDetails, .notes, .seconds, .noSwipeReply, .noHaptics, .hideNewsTab, .hideBadge, .glassProfile, .profileV2, .showBadges, .advertiseBadge, .minimalTabs, .localTranscription, .inlineCalc, .extraMenu, .relativeLastSeen, .exactNumbers, .editedIcon, .forwardsCount, .noTail, .hideReactionsPrivate, .hideReactionsGroups, .hideReactionsChannels, .filterZalgo, .swapSwipes]
         case .security: return [.hiddenChats, .panicShake, .hideOnCapture, .protectMenu]
         case .manage: return []
         }
@@ -715,6 +735,9 @@ private func ghostGramSettingsEntries(page: GhostPage?) -> [GhostGramSettingsEnt
         toggle(1, .autoCacheFiles, enabled: cacheOn)
         link(1, .cacheLimit, "Максимальный размер", cacheLimitTitle(GhostSettings.autoCacheLimitMB))
         footer(1, "Медиа из личных чатов скачивается сразу, поэтому остаётся у тебя, даже если собеседник его удалит.")
+        header(2, "КАМЕРА И ФОТО")
+        toggle(2, .roundRear)
+        toggle(2, .alwaysHD)
     case .content:
         header(0, "КОНТЕНТ")
         toggle(0, .bypassCopyProtection)
@@ -757,6 +780,7 @@ private func ghostGramSettingsEntries(page: GhostPage?) -> [GhostGramSettingsEnt
         toggle(0, .forwardsCount)
         toggle(0, .noTail)
         toggle(0, .filterZalgo)
+        toggle(0, .swapSwipes)
         footer(0, "Калькулятор: напиши «150*3=», «5 км в милях=», «100 usd=» или «время Токио=» — ответ допишется сам. Курсы валют берутся из открытого источника раз в 12 часов.")
         header(1, "ПОДТВЕРЖДЕНИЯ")
         toggle(1, .confirmVoice)
@@ -793,6 +817,8 @@ private func ghostGramSettingsEntries(page: GhostPage?) -> [GhostGramSettingsEnt
         link(0, .presets, "Пресеты")
         link(0, .exportSettings, "Экспорт настроек")
         link(0, .importSettings, "Импорт из буфера")
+        link(0, .exportFile, "Сохранить бэкап в файл")
+        link(0, .importFile, "Восстановить из файла")
         header(1, "")
         link(1, .reset, "Сбросить все настройки GhostGram", destructive: true)
     }
@@ -829,6 +855,53 @@ private func ghostChoose(context: AccountContext, from: ViewController, title: S
     }
     actions.append(TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_Cancel, action: {}))
     from.present(textAlertController(context: context, title: title, text: text, actions: actions, actionLayout: .vertical), in: .window(.root))
+}
+
+private func ghostSettingsTopViewController() -> UIViewController? {
+    var window: UIWindow?
+    for scene in UIApplication.shared.connectedScenes {
+        if let windowScene = scene as? UIWindowScene, let keyWindow = windowScene.windows.first(where: { $0.isKeyWindow }) {
+            window = keyWindow
+            break
+        }
+    }
+    var top = window?.rootViewController
+    while let presented = top?.presentedViewController {
+        top = presented
+    }
+    return top
+}
+
+/// Picks a GhostGram settings backup from Files.
+private final class GhostSettingsFilePicker: NSObject, UIDocumentPickerDelegate {
+    static let shared = GhostSettingsFilePicker()
+    private var completion: ((String) -> Void)?
+
+    func pick(completion: @escaping (String) -> Void) {
+        self.completion = completion
+        let picker = UIDocumentPickerViewController(forOpeningContentTypes: [.json, .plainText, .data])
+        picker.delegate = self
+        picker.allowsMultipleSelection = false
+        ghostSettingsTopViewController()?.present(picker, animated: true, completion: nil)
+    }
+
+    func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
+        guard let url = urls.first else {
+            return
+        }
+        let accessing = url.startAccessingSecurityScopedResource()
+        let text = (try? String(contentsOf: url, encoding: .utf8)) ?? ""
+        if accessing {
+            url.stopAccessingSecurityScopedResource()
+        }
+        let completion = self.completion
+        self.completion = nil
+        completion?(text)
+    }
+
+    func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) {
+        self.completion = nil
+    }
 }
 
 private func ghostInform(context: AccountContext, from: ViewController?, title: String, text: String) {
@@ -1093,6 +1166,19 @@ private func ghostGramSettingsPage(context: AccountContext, page: GhostPage?) ->
                 ("Чатов с фейковым статусом", "\(GhostSettings.fakeActivities.count)")
             ]
             ghostPushController(controller, ghostInfoListController(context: context, title: "Моя статистика", rows: rows, emptyText: ""))
+        case .exportFile:
+            let url = FileManager.default.temporaryDirectory.appendingPathComponent("GhostGram-settings.json")
+            if (try? GhostSettings.exportJSON().data(using: .utf8)?.write(to: url, options: .atomic)) != nil {
+                let activity = UIActivityViewController(activityItems: [url], applicationActivities: nil)
+                activity.popoverPresentationController?.sourceView = controller.view
+                ghostSettingsTopViewController()?.present(activity, animated: true, completion: nil)
+            }
+        case .importFile:
+            GhostSettingsFilePicker.shared.pick(completion: { [weak controller] text in
+                let count = GhostSettings.importJSON(text)
+                changed()
+                ghostInform(context: context, from: controller, title: count > 0 ? "Готово" : "Не получилось", text: count > 0 ? "Восстановлено настроек: \(count)." : "В файле нет настроек GhostGram.")
+            })
         case .doubleTapAction:
             var options: [(String, () -> Void)] = []
             for (index, title) in GhostSettings.doubleTapActionTitles.enumerated() {
