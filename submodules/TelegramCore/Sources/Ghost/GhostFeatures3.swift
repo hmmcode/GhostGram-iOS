@@ -44,6 +44,35 @@ public enum GhostFakeActivityKind: String, CaseIterable {
     }
 }
 
+/// Custom fake statuses. They are stored next to the regular kinds as "text:…" or "draft:…".
+public enum GhostFakeCustom {
+    /// Sent as the "watching an emoji animation" activity, whose emoji the other app prints as is.
+    public static let textPrefix = "text:"
+    /// Sent as a live typing draft, the bubble bots use to stream an answer.
+    public static let draftPrefix = "draft:"
+
+    public static func text(_ raw: String) -> String? {
+        if raw.hasPrefix(textPrefix) {
+            return String(raw.dropFirst(textPrefix.count))
+        }
+        if raw.hasPrefix(draftPrefix) {
+            return String(raw.dropFirst(draftPrefix.count))
+        }
+        return nil
+    }
+
+    /// A short label for menus.
+    public static func title(_ raw: String) -> String? {
+        if let kind = GhostFakeActivityKind(rawValue: raw) {
+            return kind.title
+        }
+        guard let value = text(raw) else {
+            return nil
+        }
+        return raw.hasPrefix(draftPrefix) ? "💬 \(value)" : "✏️ \(value)"
+    }
+}
+
 private final class GhostFakeActivityRunner {
     private weak var account: Account?
     private var timer: DispatchSourceTimer?
@@ -72,19 +101,29 @@ private final class GhostFakeActivityRunner {
             return
         }
         let network = account.network
-        let _ = (account.postbox.transaction { transaction -> [(Api.InputPeer, PeerInputActivity)] in
-            var result: [(Api.InputPeer, PeerInputActivity)] = []
+        let _ = (account.postbox.transaction { transaction -> [(Api.InputPeer, Api.SendMessageAction)] in
+            var result: [(Api.InputPeer, Api.SendMessageAction)] = []
             for (id, raw) in items {
-                guard let kind = GhostFakeActivityKind(rawValue: raw), let peer = transaction.getPeer(PeerId(id)), let inputPeer = apiInputPeer(peer) else {
+                guard let peer = transaction.getPeer(PeerId(id)), let inputPeer = apiInputPeer(peer) else {
                     continue
                 }
-                result.append((inputPeer, kind.activity))
+                if let kind = GhostFakeActivityKind(rawValue: raw) {
+                    result.append((inputPeer, actionFromActivity(kind.activity)))
+                } else if let value = GhostFakeCustom.text(raw), !value.isEmpty {
+                    if raw.hasPrefix(GhostFakeCustom.draftPrefix) {
+                        // One stable draft id per chat, so the same bubble keeps updating.
+                        let randomId = id ^ 0x4768_6f73_7447_7261
+                        result.append((inputPeer, .sendMessageTextDraftAction(.init(flags: 0, randomId: randomId, text: .textWithEntities(.init(text: value, entities: []))))))
+                    } else {
+                        result.append((inputPeer, .sendMessageEmojiInteractionSeen(.init(emoticon: value))))
+                    }
+                }
             }
             return result
         }
         |> deliverOn(Queue.concurrentDefaultQueue())).start(next: { requests in
-            for (inputPeer, activity) in requests {
-                let _ = (network.request(Api.functions.messages.setTyping(flags: 0, peer: inputPeer, topMsgId: nil, action: actionFromActivity(activity)))
+            for (inputPeer, action) in requests {
+                let _ = (network.request(Api.functions.messages.setTyping(flags: 0, peer: inputPeer, topMsgId: nil, action: action))
                 |> `catch` { _ -> Signal<Api.Bool, NoError> in
                     return .single(.boolFalse)
                 }).start()

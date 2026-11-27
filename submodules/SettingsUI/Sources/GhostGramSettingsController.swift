@@ -1355,7 +1355,7 @@ private enum GhostPeerListKind: Equatable {
     func label(_ id: Int64) -> String {
         switch self {
         case .fake:
-            return GhostSettings.fakeActivities[id].flatMap { GhostFakeActivityKind(rawValue: $0)?.title } ?? ""
+            return GhostSettings.fakeActivities[id].flatMap { GhostFakeCustom.title($0) } ?? ""
         case .nicknames:
             return GhostSettings.nicknames[id] ?? ""
         default:

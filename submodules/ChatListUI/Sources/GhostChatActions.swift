@@ -20,8 +20,8 @@ func ghostOpenChatActions(context: AccountContext, peerId: EnginePeer.Id, contro
     var actions: [TextAlertAction] = []
 
     let fakeTitle: String
-    if let raw = GhostSettings.fakeActivities[id], let kind = GhostFakeActivityKind(rawValue: raw) {
-        fakeTitle = "🎭 Статус: \(kind.title)"
+    if let raw = GhostSettings.fakeActivities[id], let title = GhostFakeCustom.title(raw) {
+        fakeTitle = "🎭 Статус: \(title)"
     } else {
         fakeTitle = "🎭 Фейковый статус…"
     }
@@ -97,6 +97,25 @@ func ghostChooseFakeActivity(context: AccountContext, peerId: EnginePeer.Id, con
             var items = GhostSettings.fakeActivities
             items[id] = kind.rawValue
             GhostSettings.fakeActivities = items
+        }))
+    }
+    let current = GhostSettings.fakeActivities[id] ?? ""
+    for (prefix, title, hint) in [
+        (GhostFakeCustom.textPrefix, "✏️ Свой текст (эксперимент)", "Собеседник увидит под твоим именем служебное слово Telegram и твой текст, например «смотрит крутой 😎»."),
+        (GhostFakeCustom.draftPrefix, "💬 Живой черновик (эксперимент)", "Собеседник увидит в чате пузырь, где этот текст как будто набирается. Работает, только если сервер разрешит это обычным аккаунтам.")
+    ] {
+        actions.append(TextAlertAction(type: .genericAction, title: title, action: { [weak controller] in
+            let value = current.hasPrefix(prefix) ? (GhostFakeCustom.text(current) ?? "") : ""
+            let prompt = promptController(context: context, text: hint, value: value, placeholder: "крутой 😎", characterLimit: 64, apply: { text in
+                guard let text = text?.trimmingCharacters(in: .whitespacesAndNewlines), !text.isEmpty else {
+                    return
+                }
+                var items = GhostSettings.fakeActivities
+                items[id] = prefix + text
+                GhostSettings.fakeActivities = items
+                GhostSettings.fakeActivitiesEnabled = true
+            })
+            controller?.present(prompt, in: .window(.root))
         }))
     }
     if GhostSettings.fakeActivities[id] != nil {
