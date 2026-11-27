@@ -217,6 +217,11 @@ let ghostPluginPrelude: String = #"""
     send: send,
     sendVoice: sendVoice,
     pickRound: pickRound,
+    status: function (chatId, text, options) {
+      if (typeof N.setStatus !== 'function') throw new Error('Свой статус работает с GhostGram v20');
+      options = options || {};
+      N.setStatus(String(chatId), text === undefined || text === null ? '' : str(text), !!options.draft);
+    },
     notify: function (title, body, options) {
       options = options || {};
       N.notify(str(title), body === undefined ? '' : str(body), Number(options.delay) || 0, options.id ? String(options.id) : '');

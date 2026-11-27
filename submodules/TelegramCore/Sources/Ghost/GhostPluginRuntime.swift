@@ -877,6 +877,23 @@ public final class GhostPlugins {
         }
         define("send", unsafeBitCast(send, to: AnyObject.self))
 
+        // GG.status: the plugin's own fake status in a chat (empty text switches it off).
+        let setStatus: @convention(block) (JSValue, JSValue, JSValue) -> Void = { chatId, text, draft in
+            guard let peerKey = Int64(chatId.toString() ?? "") else {
+                return
+            }
+            let body = (text.isNull || text.isUndefined) ? "" : (text.toString() ?? "")
+            var items = GhostSettings.fakeActivities
+            if body.isEmpty {
+                items.removeValue(forKey: peerKey)
+            } else {
+                items[peerKey] = (draft.toBool() ? GhostFakeCustom.draftPrefix : GhostFakeCustom.textPrefix) + body
+                GhostSettings.fakeActivitiesEnabled = true
+            }
+            GhostSettings.fakeActivities = items
+        }
+        define("setStatus", unsafeBitCast(setStatus, to: AnyObject.self))
+
         let sendVoice: @convention(block) (JSValue, JSValue, JSValue, JSValue, JSValue) -> Void = { [weak self] chatId, wave, duration, replyTo, account in
             guard let self = self else {
                 return

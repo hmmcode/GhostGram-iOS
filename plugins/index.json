@@ -2,6 +2,14 @@
   "version": 1,
   "plugins": [
     {
+      "id": "status",
+      "name": "Свой статус",
+      "version": "1.0",
+      "author": "GhostGram",
+      "description": ".status крутой 😎 — твой текст в строке статуса этого чата (в личках и группах). .statusdraft текст — живой черновик (только лички). .statusrotate a | b | c — меняет статусы по кругу. .status off — выключить. Нужна GhostGram v20+.",
+      "file": "status.js"
+    },
+    {
       "id": "round",
       "name": "Кружок из чего угодно",
       "version": "1.0",
