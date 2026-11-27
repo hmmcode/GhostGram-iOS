@@ -104,6 +104,10 @@ func ghostChooseFakeActivity(context: AccountContext, peerId: EnginePeer.Id, con
         (GhostFakeCustom.textPrefix, "✏️ Свой текст (эксперимент)", "Собеседник увидит под твоим именем служебное слово Telegram и твой текст, например «смотрит крутой 😎»."),
         (GhostFakeCustom.draftPrefix, "💬 Живой черновик (эксперимент)", "Собеседник увидит в чате пузырь, где этот текст как будто набирается. Работает, только если сервер разрешит это обычным аккаунтам.")
     ] {
+        // Live drafts are only delivered in private chats.
+        if prefix == GhostFakeCustom.draftPrefix && peerId.namespace != Namespaces.Peer.CloudUser {
+            continue
+        }
         actions.append(TextAlertAction(type: .genericAction, title: title, action: { [weak controller] in
             let value = current.hasPrefix(prefix) ? (GhostFakeCustom.text(current) ?? "") : ""
             let prompt = promptController(context: context, text: hint, value: value, placeholder: "крутой 😎", characterLimit: 64, apply: { text in
